@@ -12,11 +12,12 @@ include_directories(src)
 
 find_package(oatpp              1.3.0 REQUIRED)
 find_package(oatpp-websocket    1.3.0 REQUIRED)
-
+find_package(oatpp-postgresql   1.3.0 REQUIRED)
 find_package(inja REQUIRED)
 
 add_definitions(
         -DFRONT_PATH="${CMAKE_CURRENT_LIST_DIR}/front/"
+        -DDATABASE_MIGRATIONS="${CMAKE_CURRENT_LIST_DIR}/src/migrations"
 )
 
 
@@ -31,12 +32,14 @@ add_executable(${project_name}-exe
                 src/service/Room.cpp
                 src/service/Room.hpp
                 src/dto/DTOs.hpp
+                src/service/db/Database.hpp
+                src/DatabaseComponent.hpp
                 )
 
 target_link_libraries(${project_name}-exe
         PUBLIC oatpp::oatpp 
         PUBLIC pantor::inja
         PUBLIC oatpp::oatpp-websocket
-
+        PUBLIC oatpp::oatpp-postgresql
 )
 

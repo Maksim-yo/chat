@@ -1,0 +1,32 @@
+CREATE SCHEMA IF NOT EXISTS chats;
+
+CREATE TABLE IF NOT EXISTS chats.chat (
+  id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY 
+  );
+
+
+CREATE TABLE IF NOT EXISTS chats.chat_user (
+  id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY ,
+  nickname VARCHAR(20) NOT NULL ,
+  mail VARCHAR(35) NOT NULL , 
+  password VARCHAR(35) NOT NULL
+   );
+
+
+CREATE TABLE IF NOT EXISTS chats.chat_line (
+  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  chat_id INT NOT NULL ,
+  user_id INT NOT NULL ,
+  line_text TEXT NOT NULL ,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ,
+  CONSTRAINT fk_chat_line_chat
+    FOREIGN KEY (chat_id )
+    REFERENCES chats.chat (id )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT fk_chat_line_chat_user1
+    FOREIGN KEY (user_id )
+    REFERENCES chats.chat_user (id )
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+    );

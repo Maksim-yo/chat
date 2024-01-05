@@ -3,6 +3,7 @@
 "dependencies": [
   "oatpp",
   "oatpp-websocket",
-  "inja"
+  "oatpp-postgresql",
+  "inja"  
   ]
 }
