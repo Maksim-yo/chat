@@ -1,0 +1,8 @@
+{
+   
+    "default": {
+      "host": "127.0.0.1",
+      "port": 8000,
+      "dbConnectionString": "postgresql://postgres:mysecretpassword@127.0.0.1:8888/postgres"
+    }
+  }

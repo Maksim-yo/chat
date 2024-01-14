@@ -18,6 +18,7 @@ find_package(inja REQUIRED)
 add_definitions(
         -DFRONT_PATH="${CMAKE_CURRENT_LIST_DIR}/front/"
         -DDATABASE_MIGRATIONS="${CMAKE_CURRENT_LIST_DIR}/src/migrations"
+        -DCONFIG_PATH="${CMAKE_CURRENT_LIST_DIR}/config/config.json"
 )
 
 
@@ -32,14 +33,21 @@ add_executable(${project_name}-exe
                 src/service/Room.cpp
                 src/service/Room.hpp
                 src/dto/DTOs.hpp
+                src/dto/ConfigDto.hpp
                 src/service/db/Database.hpp
                 src/DatabaseComponent.hpp
+                src/service/auth/AuthServiceBase.hpp
+                src/service/auth/AuthServiceBase.cpp
+                src/service/auth/AuthTokenService.hpp
+                src/service/auth/AuthTokenService.cpp
+                src/service/auth/UserObject.hpp
+                src/utils/utils.hpp
                 )
 
 target_link_libraries(${project_name}-exe
         PUBLIC oatpp::oatpp 
-        PUBLIC pantor::inja
         PUBLIC oatpp::oatpp-websocket
         PUBLIC oatpp::oatpp-postgresql
+        PUBLIC oatpp::oatpp-test
+        PUBLIC pantor::inja
 )
-
