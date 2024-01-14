@@ -2,16 +2,16 @@
   "version": 3,
   "configurePresets": [
     {
-      "name": "HabrPresetName",
-      "displayName": "GoodPreset",
+      "name": "windows-msvc",
+      "displayName": "Windows MSVC x64 Debug",
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build",
-	    "cmakeExecutable": "C:/Program Files/CMake/bin/cmake.exe",
+      "binaryDir": "${sourceDir}/build/",
       "architecture": {
         "value": "x64",
         "strategy": "external"
       },
       "cacheVariables": {
+
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
         "CMAKE_C_COMPILER": "cl",
@@ -23,13 +23,40 @@
           "hostOS": [ "Windows" ]
         }
       }
+    },
+    {
+      "name": "windows-mingw",
+      "displayName": "Windows MINGW x64 Debug",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/mingw",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "VCPKG_TARGET_TRIPLET": "x64-mingw-static",
+        "VCPKG_HOST_TRIPLET": "x64-mingw-static",
+        "VCPKG_BUILD_TYPE": "auto",
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      
+      }
     }
   ],
   "buildPresets": [
     {
-      "name": "debug",
-      "displayName": "Ninja Debug",
-      "configurePreset": "HabrPresetName",
+      "name": "msvc-debug",
+      "displayName": "MSVC Debug",
+      "configurePreset": "windows-msvc",
+      "configuration": "Debug",
+      "verbose": true
+    },
+    {
+      "name": "mingw-debug",
+      "displayName": "MINGW Debug",
+      "configurePreset": "windows-mingw",
       "configuration": "Debug",
       "verbose": true
     }
