@@ -2,15 +2,36 @@
 #define __DATABASECOMPONENT_H__
 
 #include "service/db/Database.hpp"
+#include "dto/ConfigDto.hpp"
 
 class DatabaseComponent {
 public:
 
+  OATPP_CREATE_COMPONENT(oatpp::Object<ConfigDto>, config)([this] {
+
+    const char* configPath = CONFIG_PATH;
+    auto objectMapper = oatpp::parser::json::mapping::ObjectMapper::createShared();
+    
+    oatpp::String configText = oatpp::String::loadFromFile(configPath);
+    if (configText) {
+
+        auto profiles = objectMapper->readFromString<oatpp::Fields<oatpp::Object<ConfigDto>>>(configText);
+        auto profile = profiles.getValueByKey("default");
+        if (!profile)
+            throw std::runtime_error("No configuration profile found. Server won't run.");
+        return profile;
+
+    }
+    OATPP_LOGE("AppComponent", "Can't load configuration file at path '%s'", configPath);
+    throw std::runtime_error("[AppComponent]: Can't load configuration file");
+
+  }());
 
   OATPP_CREATE_COMPONENT(std::shared_ptr<Database>, m_database)([] {
 
-    const char* dbConnectionString = std::getenv("dbConnectionString"); 
-    auto connectionProvider = std::make_shared<oatpp::postgresql::ConnectionProvider>(dbConnectionString);
+    OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
+
+    auto connectionProvider = std::make_shared<oatpp::postgresql::ConnectionProvider>(config->dbConnectionString);
 
     auto connectionPool = oatpp::postgresql::ConnectionPool::createShared(connectionProvider,
                                                                           10,
