@@ -17,46 +17,38 @@ oatpp::Object<UserToken> AuthTokenService::createToken(oatpp::Object<UserDto> us
     token->id = user->id;
     token->expiry = Utils::getDateFromCurrent(7);
 
-    auto res = m_db->createUserToken(token);
-    OATPP_ASSERT(res->isSuccess() == true);
-    auto dbResult = res->fetch<oatpp::Vector<oatpp::Object<UserToken>>>();
-    OATPP_ASSERT(dbResult->size() == 1);
-    auto token_value = dbResult[0];
-    OATPP_LOGD("AuthTokenService", "Token %s created success", token_value->token.getValue("None"));
+    auto dbToken = m_chatDao->createUserToken(token);
+    OATPP_LOGD("AuthTokenService", "Token %s created success", dbToken->token.getValue("None"));
     clearExpiredTokens();
 
-    return token_value;
+    return dbToken;
 }
 
 void AuthTokenService::onUserAuthenticated(oatpp::Object<UserDto> user)
 {
-    auto res = m_db->findTokenByUser(user->id);
-    if (!res->isSuccess())
-        return;
+    // auto res = m_db->findTokenByUser(user->id);
+    // if (!res->isSuccess())
+    //     return;
     // auto dbResult = res->fetch<oatpp::Vector<oatpp::Object><UserToken>>();
 
 }
 
 std::optional<oatpp::Object<UserDto>> AuthTokenService::proccessToken(oatpp::String tokenValue)
 {
-    auto res = m_db->findToken(tokenValue);
-    if (!res->isSuccess())
+    auto token = m_chatDao->findToken(tokenValue);
+    if (!token.has_value())
         return std::nullopt;
-
-    auto dbResult = res->fetch<oatpp::Vector<oatpp::Object<UserToken>>>();
-    OATPP_ASSERT(dbResult->size() == 1);
-    auto token = dbResult[0];
-    if (Utils::isDateExpired(token->expiry)){
-        m_db->deleteTokenByValue(tokenValue);
+    if (Utils::isDateExpired(token.value()->expiry)){
+        m_chatDao->deleteTokenByValue(tokenValue);
         OATPP_LOGD("AuthTokenService", "Token %s expired", tokenValue);
         return std::nullopt;
     }
+    return m_chatDao->getUserById(token.value()->id);
 
-    res = m_db->getUserById(token->id);
-    return res->fetch<oatpp::Vector<oatpp::Object<UserDto>>>()[0];
 }
+    
 
 void AuthTokenService::clearExpiredTokens()
 {
-    m_db->deleteExpiredTokens(Utils::getCurrentTimeInSeconds());
+    m_chatDao->deleteExpiredTokens();
 }

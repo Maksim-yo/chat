@@ -6,11 +6,11 @@
 #include "oatpp/core/macro/component.hpp"
 
 #include "UserObject.hpp"
-#include "service/db/Database.hpp"
+#include "service/dao/ChatDao.hpp"
 
 class AuthTokenService {
 private:
-    OATPP_COMPONENT(std::shared_ptr<Database>, m_db);
+    OATPP_COMPONENT(std::shared_ptr<ChatDao>, m_chatDao);
 
 public:
 

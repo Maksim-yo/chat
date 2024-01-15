@@ -1,8 +1,5 @@
-#ifndef __AUTHSERVICEBASE_H__
-#define __AUTHSERVICEBASE_H__
 
-#include  "AuthServiceBase.hpp"
-#include "UserObject.hpp"
+#include "AuthServiceBase.hpp"
 
 AuthServiceBase::AuthServiceBase()
 {
@@ -11,32 +8,20 @@ AuthServiceBase::AuthServiceBase()
 
 std::optional<oatpp::Object<UserToken>> AuthServiceBase::authentication(oatpp::String login, oatpp::String password)
 {
-    auto userQuery = m_db->getUserByLoginAndPassword(login, password);
-    if (!userQuery->isSuccess())
+    auto user = m_chatDao->getUserByLoginAndPassword(login, password);
+    if (!user.has_value())
         return std::nullopt;
-    auto userResult  = userQuery->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();
-    OATPP_ASSERT(userResult->size() == 1)
-    auto user = userResult[0];
-    auto tokenQuery = m_db->findTokenByUser(user->id);
-    if (!tokenQuery->isSuccess())
-        return m_authTokenService.createToken(user);
-    auto tokenResult =  tokenQuery->fetch<oatpp::Vector<oatpp::Object<UserToken>>>();
-    OATPP_ASSERT(tokenResult->size() == 1)
-    return tokenResult[0];
-    
+    auto token = m_chatDao->getTokenByUserId(user.value());
+    if (!token.has_value())
+        return m_authTokenService.createToken(user.value());
 
+    return std::nullopt;
 }
 
 std::optional<oatpp::Object<UserToken>> AuthServiceBase::registration(oatpp::Object<UserDto> user)
 {
-
-    auto dbResult = m_db->createUser(user);
-    if (!dbResult->isSuccess())
-        return std::nullopt;
-    // TODO: change
-    auto userRes = dbResult->fetch<oatpp::Vector<oatpp::Object<UserDto>>>();        // Getting id of user
-    OATPP_ASSERT(userRes->size() == 1);
-    return m_authTokenService.createToken(userRes[0]);
+    auto createdUser = m_chatDao->createUser(user);
+    return m_authTokenService.createToken(createdUser);
     
 }
 
@@ -67,4 +52,3 @@ std::shared_ptr<oatpp::web::server::handler::AuthorizationObject> AuthServiceBas
 }
 
 
-#endif // __AUTHSERVICEBASE_H__

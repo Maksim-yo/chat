@@ -2,12 +2,11 @@
 #include "oatpp/web/server/HttpConnectionHandler.hpp"
 #include "oatpp/core/macro/component.hpp"
 #include "oatpp/web/protocol/http/outgoing/ResponseFactory.hpp"
-
 #include "oatpp/web/protocol/http/Http.hpp"
 
+#include <functional>
 
 #include "AuthServiceBase.hpp"
-#include <functional>
 
 class RequestInterceptor: public oatpp::web::server::interceptor::RequestInterceptor {
 private:

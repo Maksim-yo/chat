@@ -5,13 +5,13 @@
 #include "oatpp/core/macro/codegen.hpp"
 
 #include "dto/UserDto.hpp"
-#include "service/db/Database.hpp"
+#include "service/dao/ChatDao.hpp"
 #include "AuthTokenService.hpp"
 
 class AuthServiceBase {
 private:
-    OATPP_COMPONENT(std::shared_ptr<Database>, m_db);
-    AuthTokenService m_authTokenService;
+    OATPP_COMPONENT(std::shared_ptr<ChatDao>, m_chatDao);
+    AuthTokenService m_authTokenService;    
 public:
 
     AuthServiceBase();
