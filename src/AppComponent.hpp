@@ -10,9 +10,10 @@
 #include "oatpp/core/macro/component.hpp"
 
 #include "service/ConnectionHandler.hpp"
-#include "service/auth/RequestInterceptor.hpp"
+#include "service/interceptors/LoggerInterceptor.hpp"
 #include "service/auth/AuthServiceBase.hpp"
 #include "dto/ConfigDto.hpp"
+#include "service/dao/ChatDAO.hpp"
 class AppComponent {
 public:
 
@@ -34,6 +35,13 @@ public:
     return oatpp::parser::json::mapping::ObjectMapper::createShared();
   }());
 
+
+  OATPP_CREATE_COMPONENT(std::shared_ptr<ChatDao>, m_chatDao)([] {
+    return std::make_shared<ChatDao>();
+  }());
+
+
+
   OATPP_CREATE_COMPONENT(std::shared_ptr<AuthServiceBase>, m_authServiceBase)([] {
     return std::make_shared<AuthServiceBase>();
   }());
@@ -43,8 +51,10 @@ public:
     OATPP_COMPONENT(std::shared_ptr<oatpp::web::server::HttpRouter>, router); 
     OATPP_COMPONENT(std::shared_ptr<oatpp::async::Executor>, executor); 
     auto connectionHandler = oatpp::web::server::AsyncHttpConnectionHandler::createShared(router, executor);
-    std::shared_ptr<RequestInterceptor> interceptor = std::make_shared<RequestInterceptor>();
-    connectionHandler->addRequestInterceptor(interceptor);
+    std::shared_ptr<LoggerRequestInterceptor> requestInterceptor = std::make_shared<LoggerRequestInterceptor>();
+    std::shared_ptr<LoggerResponseInterceptor> responseInterceptor = std::make_shared<LoggerResponseInterceptor>();
+    connectionHandler->addRequestInterceptor(requestInterceptor);
+    connectionHandler->addResponseInterceptor(responseInterceptor);
 
     return connectionHandler;
   }());
@@ -55,9 +65,6 @@ public:
     connectionHandler->setSocketInstanceListener(std::make_shared<ConnectionHandler>());
     return connectionHandler;
   }());
-
-
-
 
 
 

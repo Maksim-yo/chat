@@ -42,6 +42,10 @@ add_executable(${project_name}-exe
                 src/service/auth/AuthTokenService.cpp
                 src/service/auth/UserObject.hpp
                 src/utils/utils.hpp
+                src/utils/utils.cpp
+                src/service/dao/ChatDao.hpp
+                src/service/dao/ChatDao.cpp
+                src/service/interceptors/LoggerInterceptor.hpp
                 )
 
 target_link_libraries(${project_name}-exe
