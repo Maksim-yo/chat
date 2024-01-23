@@ -10,5 +10,9 @@ public:
     oatpp::Object<UserDto> user;
     
     UserObject(oatpp::Object<UserDto> user) : user(user) {}
+
+    inline oatpp::Object<UserDto> getUser() {
+        return user;
+    }
 };
 #endif // __USEROJBECT_H__

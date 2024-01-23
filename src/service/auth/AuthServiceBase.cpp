@@ -15,7 +15,7 @@ std::optional<oatpp::Object<UserToken>> AuthServiceBase::authentication(oatpp::S
     if (!token.has_value())
         return m_authTokenService.createToken(user.value());
 
-    return std::nullopt;
+    return token;
 }
 
 std::optional<oatpp::Object<UserToken>> AuthServiceBase::registration(oatpp::Object<UserDto> user)
@@ -25,7 +25,7 @@ std::optional<oatpp::Object<UserToken>> AuthServiceBase::registration(oatpp::Obj
     
 }
 
-std::shared_ptr<oatpp::web::server::handler::AuthorizationObject> AuthServiceBase::authorize(const oatpp::String& token)
+std::shared_ptr<UserObject> AuthServiceBase::authorize(const oatpp::String& token)
 {
     auto res = m_authTokenService.proccessToken(token);
     if (res.has_value())
@@ -33,7 +33,7 @@ std::shared_ptr<oatpp::web::server::handler::AuthorizationObject> AuthServiceBas
     return nullptr;
 }
 
-std::shared_ptr<oatpp::web::server::handler::AuthorizationObject> AuthServiceBase::handleAuthorization(const oatpp::String &token)
+std::shared_ptr<UserObject> AuthServiceBase::handleAuthorization(const oatpp::String &token)
 {   
     
     if (token) { 
