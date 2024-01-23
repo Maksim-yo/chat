@@ -5,6 +5,7 @@
 #include "oatpp/core/Types.hpp"
 
 #include "dto/UserDto.hpp"
+#include "dto/DTOs.hpp"
 
 #include OATPP_CODEGEN_BEGIN(DbClient) //<- Begin Codegen
 
@@ -15,6 +16,7 @@ public:
   {
 
     oatpp::orm::SchemaMigration migration(executor);
+    // @ts-ignore
     migration.addFile(1, DATABASE_MIGRATIONS "/001_init.sql");
     migration.migrate();
     
@@ -45,6 +47,22 @@ QUERY(getUserById,
       "SELECT * FROM app_user WHERE id=:id;",
       PREPARE(true),
       PARAM(oatpp::Int32, id))
+
+QUERY(getUserStartWithByNickname, 
+      "SELECT id, nickname FROM app_user WHERE nickname LIKE :query",
+      PREPARE(true),
+      PARAM(oatpp::String, query))
+
+QUERY(getUsersHistoryInChat, 
+      "SELECT * FROM chat_line WHERE chat_id=:chat_id ORDER BY created_at DESC LIMIT :count",
+      PREPARE(true),
+      PARAM(oatpp::Int32, chat_id),
+      PARAM(oatpp::Int32, count))
+
+QUERY(getPeersInChat, 
+      "SELECT app_user.id as \"peerId\", app_user.nickname as \"peerName\" FROM chat JOIN app_user ON chat.user_first = app_user.id or chat.user_second = app_user.id WHERE chat.id = :chat_id;",
+      PREPARE(true),
+      PARAM(oatpp::Int32, chat_id))
 
 QUERY(deleteUserByLogin,
       "DELETE FROM app_user WHERE mail=:login;",
@@ -78,7 +96,15 @@ QUERY(deleteExpiredTokens,
       "DELETE FROM user_token WHERE expiry<=:expiry;",
       PREPARE(true),
       PARAM(oatpp::Int32, expiry))
-      
+
+QUERY(getUserConverstationsHisotry,
+      "SELECT * FROM chat WHERE user_first=:user_id OR user_second=:user_id;",
+      PREPARE(true),
+      PARAM(oatpp::Int32, expiry))    
+QUERY(createChatMessage,
+      "INSERT INTO chat_line (chat_id, user_id, line_text, created_at) VALUES (msg.id, msg.peerId, msg.message.message, msg.timestamp);",
+      PREPARE(true),
+      PARAM(oatpp::Object<ChatMessageDto>, msg))
 };
 
 

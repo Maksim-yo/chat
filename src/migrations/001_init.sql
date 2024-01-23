@@ -1,7 +1,3 @@
-CREATE TABLE IF NOT EXISTS chat (
-  id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY 
-  );
-
 
 CREATE TABLE IF NOT EXISTS app_user (
   id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY ,
@@ -9,8 +5,27 @@ CREATE TABLE IF NOT EXISTS app_user (
   mail VARCHAR(256) NOT NULL , 
   password VARCHAR(256) NOT NULL,
   CONSTRAINT UK_APPUSER_EMAIL UNIQUE (mail)
-
+  
    );
+
+  
+CREATE TABLE IF NOT EXISTS chat (
+  id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY ,
+  user_first INT NOT NULL ,
+  user_second INT NOT NULL ,
+  CONSTRAINT fk_user_first
+    FOREIGN KEY (user_first )
+    REFERENCES app_user (id)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION ,
+  CONSTRAINT fk_user_second
+    FOREIGN KEY (user_second )
+    REFERENCES app_user (id)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION
+
+  );
+
 
 CREATE TABLE IF NOT EXISTS user_token (
   id INT PRIMARY KEY REFERENCES app_user (id),
@@ -25,12 +40,12 @@ CREATE TABLE IF NOT EXISTS chat_line (
   chat_id INT NOT NULL ,
   user_id INT NOT NULL ,
   line_text TEXT NOT NULL ,
-  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ,
+  created_at INT NOT NULL ,
   CONSTRAINT fk_chat_line_chat
     FOREIGN KEY (chat_id )
     REFERENCES chat (id )
     ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON UPDATE NO ACTION ,
   CONSTRAINT fk_chat_line_chat_user1
     FOREIGN KEY (user_id )
     REFERENCES app_user (id )
