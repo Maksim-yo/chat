@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <style>
+    html,
+    body {
+      background-color: #ffffff;
+      height: 100%;
+    }
+
+    .sidenav {
+      height: 100%;
+      width: 0;
+      position: fixed;
+      z-index: 1;
+      top: 0;
+      left: 0;
+      background-color: white;
+      overflow-x: hidden;
+      padding-top: 60px;
+      transition: 0.2s;
+    }
+
+    .sidenav a {
+      padding: 8px 8px 8px 32px;
+      text-decoration: none;
+      font-size: 20px;
+      color: black;
+      display: block;
+      transition: 0.2s;
+    }
+
+    .sidenav a:hover {
+      color: #f1f1f1;
+    }
+
+    .sidenav .closebtn {
+      position: absolute;
+      top: 0;
+      right: 25px;
+      font-size: 36px;
+      margin-left: 50px;
+    }
+
+    .chatHistory .userChat:hover {
+
+      background-color: #eee;
+
+    }
+
+  </style>
+</head>
+
+<body style="overflow-y: hidden;">
+  <div class="row g-0" style="height: 100%;">
+
+    <div class="col-md-3 mb-4 mb-md-0 border boder-2">
+      <div class="row d-flex justify-content-center">
+        <div class="input-group rounded mb-2 mt-3">
+          <button type="button" class="btn ms-3" id="menu-button" onclick="openNav()">
+            <img src="https://p7.hiclipart.com/preview/616/930/362/hamburger-button-computer-icons-menu-bar-line.jpg"
+              width="30" />
+          </button>
+          <div id="mySidenav" class="sidenav list-unstyled mb-0">
+            <div class="d-flex flex-row ms-3">
+              <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-8.webp" alt="avatar"
+                class="rounded-circle d-flex align-self-center ms-3 shadow-1-strong" width="58">
+              <div class="pt-1 ms-3">
+                <p class="fw-bold mb-0">{{ user.nickname}}</p>
+              </div>
+            </div>
+            <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+            <a href="#" class="mt-4">Logout</a>
+          </div>
+
+          <input type="search" class="form-control rounded-4 ms-3 me-4" placeholder="Search" aria-label="Search"
+            aria-describedby="search-addon" />
+        </div>
+      </div>
+      <div class="card  ">
+        <div class="card-body mx-0 px-0 py-0 my-0 ">
+
+          <div class="chatHistory" x-data>
+
+            <ul class="list-unstyled mb-0 ">
+              <template x-for="[key, item] in Object.entries($store.converstationHistory.converstationHistory)", :key="key">
+                <a role="button" style="color: black;text-decoration: none;" @click="handleChoiceClick(item)">
+                  <li class="userChat p-2 border-bottom d-flex justify-content-between">
+                    <div class="d-flex flex-row">
+                      <img :src="item.profile_image" alt="avatar"
+                        class="rounded-circle d-flex align-self-center ms-3 shadow-1-strong" width="58">
+                      <div class="pt-1 ms-3">
+                        <p class="fw-bold mb-0" x-text="item.roomName"></p>
+                        <p class="small text-muted mt-1" x-text="$store.converstationHistory.getLastUserMessage(item).message">?</p>
+                      </div>
+                    </div>
+                    <div class="pt-1">
+                      <p class="small text-muted mb-1">Just now</p>
+                      <span class="badge bg-danger float-end">1</span>
+                    </div>
+                  </li>
+                </a>
+              </template>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6 col-lg-7 col-xl-8 align-self-end">
+      <div x-data>
+        <ul class="list-unstyled mt-2 ms-4">
+          <template x-for="(item, index) in $store.converstationHistory.currentChat">
+
+            <li class="d-flex mb-4">
+              <!-- <img :src="item.profile_image" alt="avatar" class="rounded-circle d-flex align-self-start shadow-1-strong"
+                width="50"> -->
+              <div class="card ms-3 m-0 p-0 my-auto" :class="{'bg-primary': $store.converstationHistory.isPeerIdCurrentUser(item)}" style="border-radius: 15px;">
+
+                <div class="card-body rounded-2 p-2">
+                  <div class="mb-0 " x-text="item.message" >
+                  </div>
+                </div>
+              </div>
+            </li>
+          </template>
+        </ul>
+        <div class="col">
+
+        <textarea class="form-control" id="chatTextArea" rows="3"></textarea>
+        <button type="submit" class="btn btn-info btn-rounded float-end mb-5" value="Send"
+        onclick="handleSumbitButton();">Send</button>
+            
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+  </div>
+
+</body>
+<script src="chat.js"></script>
+
+<script>
+
+</script>
+
+</html>
