@@ -16,18 +16,34 @@
 
 #include <inja/inja.hpp>
 
+#include "oatpp/core/utils/ConversionUtils.hpp"
+
 
 
 #include "dto/UserDto.hpp"
 #include "service/auth/AuthServiceBase.hpp"
 #include "service/auth/AuthTokenService.hpp"
-
+#include "service/dao/ChatDAO.hpp"
 using namespace oatpp::web::server::handler;
 namespace http = oatpp::web::protocol::http;
 
+#define AUTH_INIT() \
+auto routes = request->getStartingLine().path.std_str();                  \
+oatpp::String authToken = controller->_cookieAuth(  request);             \
+std::shared_ptr<UserObject> authObject = nullptr;\
+try {                                                                     \
+authObject = controller->m_authServiceBase->handleAuthorization(authToken);\
+}                                                                         \
+catch(const oatpp::web::protocol::http::HttpError& err) {                 \
+                                                                          \
+  if (routes != "/accounts/registration" || routes != "/accounts/auth") { \
+    auto response = oatpp::web::protocol::http::outgoing::ResponseFactory::createResponse(oatpp::web::protocol::http::Status::CODE_302, ""); \
+    response->putHeader("Location", "/accounts/auth");                    \
+  return _return(response);                                               \
+  }                                                                       \
+}
+
 #include OATPP_CODEGEN_BEGIN(ApiController)
-
-
 
 class AuthController : public oatpp::web::server::api::ApiController {
 
@@ -37,6 +53,21 @@ private:
   OATPP_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>, websocketConnectionHandler, "websocket");
   OATPP_COMPONENT(std::shared_ptr<AuthServiceBase>, m_authServiceBase);
   OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
+  OATPP_COMPONENT(std::shared_ptr<ChatDao>, m_chatDao);
+private:
+
+//TODO: refactor
+oatpp::String _cookieAuth(const std::shared_ptr<IncomingRequest>& request){
+    auto cookie = request->getHeader("Cookie");
+    oatpp::String authToken;
+    if (!cookie)
+      return authToken;
+    oatpp::web::protocol::http::HeaderValueData data;
+    oatpp::web::protocol::http::Parser::parseHeaderValueData(data, cookie, ';');
+    authToken = data.getTitleParamValue({AuthTokenService::TOKEN});
+    return authToken;
+    
+}                                                                         
 private:
   void setTokenCookie(const oatpp::Object<UserToken>& token, const std::shared_ptr<ApiController::OutgoingResponse>& response){
     
@@ -77,7 +108,8 @@ public:
         if (!token.has_value())
           return _return(controller->createResponse(Status::CODE_501, "Bad try"));  
         OATPP_LOGD("AuthServiceBase", "User registration - OK");
-        auto response = controller->createResponse(Status::CODE_200, "Good");
+        auto response = controller->createResponse(Status::CODE_302, ""); 
+        response->putHeader("Location", "/");
         controller->setTokenCookie(token.value(), response);
         return _return(response);
 
@@ -117,6 +149,7 @@ public:
           std::string result = env.render(temp, data); 
           auto response = controller->createResponse(Status::CODE_200, result);
           response->putHeader(Header::CONTENT_TYPE, "text/html");
+          response->putHeader("Location", "/");
           return _return(response);
 
       }
@@ -137,7 +170,8 @@ public:
         auto mail = params.get("mail");
         auto password = params.get("password");
         auto token = controller->m_authServiceBase->authentication(mail, password);
-        auto response = controller->createResponse(Status::CODE_200, "Good");
+        auto response = controller->createResponse(Status::CODE_302, "");
+        response->putHeader("Location", "/");
         controller->setTokenCookie(token.value(), response);
         return _return(response);
 
@@ -150,27 +184,109 @@ public:
 
      Action act() override {
 
+      AUTH_INIT()
+
+      auto user = authObject->getUser();
       auto response = oatpp::websocket::Handshaker::serversideHandshake(request->getHeaders(), controller->websocketConnectionHandler);
       auto parameters = std::make_shared<oatpp::network::ConnectionHandler::ParameterMap>();
+      (*parameters)["userMail"] = user->mail;
+      (*parameters)["userNickname"] = user->nickname;
+      (*parameters)["peerId"] = oatpp::utils::conversion::int32ToStr(user->id);
+
       response->setConnectionUpgradeParameters(parameters);
       return _return(response);
 
      }  
    };
 
-    ENDPOINT_ASYNC("GET", "test", TestPage){ 
+  /*
+    api: GetUserHistory
+
+    history: 
+  */
+    ENDPOINT_ASYNC("GET", "getUserChatHisory/{chat_id}", getUserHisory) {
+
+    ENDPOINT_ASYNC_INIT(getUserHisory)
+
+      Action act() override {
+
+        auto chatId = request->getPathVariable("chat_id");
+        bool success;
+        auto history = controller->m_chatDao->getUsersHistoryInChat(oatpp::utils::conversion::strToInt32(chatId, success));
+        auto res = controller->m_defaultObjectMapper->writeToString(history.value());
+        auto response = controller->createResponse(Status::CODE_200, res);
+        response->putHeader(Header::CONTENT_TYPE, "application/json");
+        return _return(response);
+
+      }  
+    };
+
+    
+
+
+  /*
+    
+    profile_url: 
+    name: 
+    last_message:
+
+  */
+  //   ENDPOINT_ASYNC("GET", "getUserChats", getUserChats) {
+
+  //   ENDPOINT_ASYNC_INIT(getUserChats)
+
+  //    Action act() override {
+      
+  //     AUTH_INIT()
+
+  //     m_chatDao->get
+  //     return _return(response);
+
+  //    }  
+  //  };
+
+    ENDPOINT_ASYNC("GET", "/", TestPage){ 
 
     ENDPOINT_ASYNC_INIT(TestPage)
 
     Action act() override {
 
+          AUTH_INIT()
+
           inja::Environment env;
           inja::json data;
-          data["user"]["is_authenticated"] = false;
-          inja::Template temp = env.parse_template(FRONT_PATH "html/test_page.html");
+
+          oatpp::String json = controller->m_defaultObjectMapper->writeToString(authObject->getUser());
+          auto userJson = inja::json::parse(json.getValue(""));
+          data["user"].update(userJson);
+
+          inja::Template temp = env.parse_template(FRONT_PATH "html/chat.html");
           std::string result = env.render(temp, data); 
           auto response = controller->createResponse(Status::CODE_200, result);
           response->putHeader(Header::CONTENT_TYPE, "text/html");
+          return _return(response);
+    }
+  };
+
+     ENDPOINT_ASYNC("GET", "chat.js", temp){ 
+
+    ENDPOINT_ASYNC_INIT(temp)
+
+    Action act() override {
+
+          AUTH_INIT()
+
+          inja::Environment env;
+          inja::json data;
+
+          oatpp::String json = controller->m_defaultObjectMapper->writeToString(authObject->getUser());
+          auto userJson = inja::json::parse(json.getValue(""));
+          data["user"].update(userJson);
+
+          inja::Template temp = env.parse_template(FRONT_PATH "html/chat.js");
+          std::string result = env.render(temp, data); 
+          auto response = controller->createResponse(Status::CODE_200, result);
+          response->putHeader(Header::CONTENT_TYPE, "text/javascript");
           return _return(response);
     }
   };

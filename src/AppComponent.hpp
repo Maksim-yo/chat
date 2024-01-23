@@ -9,7 +9,7 @@
 
 #include "oatpp/core/macro/component.hpp"
 
-#include "service/ConnectionHandler.hpp"
+#include "service/Lobby.hpp"
 #include "service/interceptors/LoggerInterceptor.hpp"
 #include "service/auth/AuthServiceBase.hpp"
 #include "dto/ConfigDto.hpp"
@@ -62,7 +62,7 @@ public:
   OATPP_CREATE_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>, websocketConnectionHandler)("websocket", [] {
     OATPP_COMPONENT(std::shared_ptr<oatpp::async::Executor>, executor);
     auto connectionHandler = oatpp::websocket::AsyncConnectionHandler::createShared(executor);
-    connectionHandler->setSocketInstanceListener(std::make_shared<ConnectionHandler>());
+    connectionHandler->setSocketInstanceListener(std::make_shared<Lobby>());
     return connectionHandler;
   }());
 

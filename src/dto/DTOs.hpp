@@ -26,9 +26,10 @@ ENUM(MessageCodes, v_int32,
   VALUE(CODE_SECURE_OFF, 11),
 
   VALUE(CODE_ONLINE, 12),
-  VALUE(CODE_OFFLINE, 13)
+  VALUE(CODE_OFFLINE, 13),
 
-
+  VALUE(CODE_CHAT_INFO, 14),
+  VALUE(CODE_FIND_ROOMS, 15)
 );
 
 class PeerDto : public oatpp::DTO {
@@ -58,25 +59,88 @@ class FileDto : public oatpp::DTO {
 
 };
 
-class MessageDto : public oatpp::DTO {
-public:
-  typedef List<Object<FileDto>> FilesList;
+class BaseMessageDto: public oatpp::DTO {
 public:
 
-  DTO_INIT(MessageDto, DTO)
-
+  DTO_INIT(BaseMessageDto, DTO)
   DTO_FIELD(Int64, peerId);
-  DTO_FIELD(String, peerName);
-  DTO_FIELD(Enum<MessageCodes>::AsNumber::NotNull, code);
-  DTO_FIELD(String, message);
+  DTO_FIELD(String, peerNickname);
   DTO_FIELD(Int64, timestamp);
+  DTO_FIELD(Enum<MessageCodes>::AsNumber::NotNull, code);
+};
 
-  DTO_FIELD(List<Object<PeerDto>>, peers);
-  DTO_FIELD(List<Object<MessageDto>>, history);
+// class MessageDto : public BaseMessageDto {
+// public:
+//   typedef List<Object<FileDto>> FilesList;
+// public:
 
-  DTO_FIELD(List<Object<FileDto>>, files);
+//   DTO_INIT(MessageDto, BaseMessageDto)
+
+//   DTO_FIELD(Int64, peerId);
+//   DTO_FIELD(String, peerName);
+//   DTO_FIELD(Enum<MessageCodes>::AsNumber::NotNull, code);
+//   DTO_FIELD(String, message);
+//   DTO_FIELD(Int64, timestamp);
+//   DTO_FIELD(String, roomHash);
+
+//   DTO_FIELD(Int32, roomId);
+//   DTO_FIELD(List<Object<PeerDto>>, peers);
+//   DTO_FIELD(List<Object<MessageDto>>, history);
+
+//   DTO_FIELD(List<Object<FileDto>>, files);
+
+// };
+
+class MessageDto: public BaseMessageDto {
+public:
+  DTO_INIT(MessageDto, BaseMessageDto)
+  DTO_FIELD(oatpp::String, message);
 
 };
+// class ChatMessageDto: public BaseMessageDto {
+// public:
+//   DTO_INIT(ChatMessageDto, BaseMessageDto)
+//   DTO_FIELD(Int32, id);
+//   DTO_FIELD(Vector<Object<MessageDto>>, messages);
+  
+// };
+
+class ChatDto: public oatpp::DTO {
+public:
+  DTO_INIT(ChatDto, DTO)
+  DTO_FIELD(Int32, id);
+
+  DTO_FIELD(Vector<Object<MessageDto>>, history);
+  DTO_FIELD(Vector<Object<PeerDto>>, peers);
+  
+};
+
+class ChatMessageDto: public BaseMessageDto {
+public:
+  DTO_INIT(ChatMessageDto, BaseMessageDto)
+
+  DTO_FIELD(Int32, id);
+  DTO_FIELD(String, name);
+  DTO_FIELD(Object<MessageDto>, message);
+  DTO_FIELD(Vector<Object<MessageDto>>, history);
+  DTO_FIELD(Vector<Object<PeerDto>>, peers);
+
+  };
+
+class MessageInitial: public BaseMessageDto {
+public: 
+  DTO_INIT(MessageInitial, BaseMessageDto)
+  DTO_FIELD(Vector<Object<ChatDto>>, chats);
+};
+
+class MessageFind: public BaseMessageDto {
+public: 
+  DTO_INIT(MessageFind, BaseMessageDto)
+  DTO_FIELD(String, query);
+  DTO_FIELD(Vector<Object<PeerDto>>, users);
+};
+
+
 
 #include OATPP_CODEGEN_END(DTO)
 
