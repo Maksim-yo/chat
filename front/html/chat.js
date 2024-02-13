@@ -42,8 +42,6 @@ function onMessage(message) {
             room_name: chat.peers[0].peerName === peerName ? chat.peers[1].peerName : chat.peers[0].peerName,
             profile_image: "https://randomuser.me/api/portraits/men/1.jpg"
           }
-          // console.log(newChat)
-          // console.log(chat)
           pushNewConverstation(newChat);
           for (let i = 0; i < chat.history.length; i++) {
             chat.history[i].is_read = true;
@@ -67,6 +65,7 @@ function onMessage(message) {
               is_read: false,
             }, chat.id);
           }
+         
         }
 
       }
@@ -111,18 +110,12 @@ socket.onclose = function (event) {
 socket.onmessage = function (event) {
   onMessage(JSON.parse(event.data));
 }
-socket.onopen = function () {
-  setTimeout(() => { }, 100)
 
-};
 function socketSendNextData(data) {
   socket.send(data);
 }
 
-function postChatMessage(message) {
 
-
-}
 function handleSumbitButton() {
 
   let outgoingMessage = document.getElementById("chatTextArea").value;
@@ -232,7 +225,7 @@ document.addEventListener('alpine:init', () => {
         return this.currentChat.peers;
       },
 
-      getLastUnreadMessageIndex() {
+      getFirstUnreadMessageIndex() {
 
         let count = 0;
         if (!this.currentChat || !this.currentChat.messages)
@@ -246,6 +239,15 @@ document.addEventListener('alpine:init', () => {
         
       },
 
+      getUnreadMessagesCount(){
+        if (!this.currentChat || !this.currentChat.messages)
+          return -1;
+        let msgCount = this.getFirstUnreadMessageIndex();
+        if (msgCount === -1)
+          return -1;
+        return this.currentChat.messages.length - this.getFirstUnreadMessageIndex() + 1;
+      },
+
       isPeerIdCurrentUser(item) {
         if (!peerId)
           return false;
@@ -253,6 +255,9 @@ document.addEventListener('alpine:init', () => {
       },
 
     }),
+    Alpine.data('scrollChatButton', () => ({
+      visible: true
+    })),
     Alpine.data("searchInput", () => ({
       search: '',
       inputDelay: 700,
@@ -301,27 +306,47 @@ const pushNewConverstation = (elm) => {
 
 }
 
+function handleScroller(){
+  let elm = document.getElementById("chat-scroller");
+  let lastUnreadMessageIndex = Alpine.store('converstationHistory').getFirstUnreadMessageIndex();
+  if (lastUnreadMessageIndex != -1 || (elm.scrollHeight - elm.clientHeight) > 0) {
+    let chatMessage = document.getElementsByClassName('chat_message')[0];
+    let chatMessageStyle = getComputedStyle(chatMessage);
+    let chatMessageMargin = parseInt(chatMessageStyle.marginBottom)
+    elm.scrollTop = (lastUnreadMessageIndex - 1) * (chatMessage.offsetHeight + chatMessageMargin) - elm.clientHeight;
+
+  }
+  else 
+    scrollToBottom();
+};
+function scrollingHanlder(){
+  // let elm = document.getElementById("chat-scroller");
+  // let lastUnreadMessageIndex = Alpine.store('converstationHistory').getLastUnreadMessageIndex();
+  // let maxScroll = (elm.scrollHeight - elm.clientHeight);
+  // if ((maxScroll - elm.clientHeight) > elm.scrollTop) {
+  //   let scrollChatBtn = document.getElementById('scroll-chat-btn-bottom');
+  //   const event = new CustomEvent("scroll-event", { bubbles: true, detail: true });
+  //   Alpine.nextTick(() => document.dispatchEvent(event));
+  // }
+  // else {
+    
+  //   const event = new CustomEvent("scroll-event", { bubbles: true, detail: false });
+  //   Alpine.nextTick(() => document.dispatchEvent(event));
+  // }
+
+
+}
 function changeCurrentChat(item) {
   Alpine.store('converstationHistory').changeCurrentChat(item);
 
-  function handleScroller(){
-    let elm = document.getElementById("chat-scroller");
-    let lastUnreadMessageIndex = Alpine.store('converstationHistory').getLastUnreadMessageIndex();
-    if (lastUnreadMessageIndex != -1 || (elm.scrollHeight - elm.clientHeight) > 0) {
-      let chatMessage = document.getElementsByClassName('chat_message')[0];
-      let chatMessageStyle = getComputedStyle(chatMessage);
-      let chatMessageMargin = parseInt(chatMessageStyle.marginBottom)
-      elm.scrollTop = (lastUnreadMessageIndex - 1) * (chatMessage.offsetHeight + chatMessageMargin) - elm.clientHeight;
   
-    }
-    else 
-      scrollToBottom();
-  }
   Alpine.nextTick(() => handleScroller());
 }
+
 function getCurrentChatId() {
   return Alpine.store('converstationHistory').getCurrentChatId();
 }
+
 function getCurrentChatPeers() {
   return Alpine.store('converstationHistory').getCurrentChatPeers();
 }
@@ -332,30 +357,22 @@ function addMessageToChat(item, roomId = -1) {
     return;
   Alpine.nextTick(() => scrollToBottom());
 
-  
 
 }
 
-function getScrollerMessagesHeight(){
+function getCurrentUnreadMessagesCount(){
+  return Alpine.store('converstationHistory').getUnreadMessagesCount();
+}
 
-
-} 
 function scrollToBottom() {
   let elm = document.getElementById("chat-scroller");
 
     var maxScroll = elm.scrollHeight - elm.clientHeight;
     elm.scrollTop = maxScroll;
 
-  
 }
-
 
 function setFindConversationResult(peers, flag = true) {
   Alpine.store('converstationHistory').setFindConversationResult(peers, flag);
 }
 
-
-function temp(){
-  let elm = document.getElementById("chat-scroller");
-console.log(elm.scrollTop);
-}

@@ -73,6 +73,10 @@
       max-height: 50%;
     }
 
+    #scroll-chat-btn-bottom:hover {
+      background-color: #a5a4b7!important;
+    }
+
   </style>
 </head>
 
@@ -143,7 +147,7 @@
       <template  x-if="$store.converstationHistory.currentChat" id="chat-template">
         
         <div class="d-flex flex-column h-100 ">
-          <ul class="chat-scroller list-unstyled d-flex flex-column ms-4  mt-4" id="chat-scroller" style="height: 90%;overflow-y:scroll;">
+          <ul class="chat-scroller list-unstyled d-flex flex-column ms-4 mt-4" @scroll="scrollingHanlder()" id="chat-scroller" style="height: 90%;overflow-y:scroll;">
             <div class="mt-auto">
             <template x-for="[id, item] in Object.entries($store.converstationHistory.currentChat.messages)" :key="id">
               <li class="chat_message d-flex mb-4">  
@@ -173,8 +177,21 @@
 
               </li>
             </template>
+            <!-- <div> -->
+            <!-- </div> -->
           </ul>
+          
           <div>
+            <a type="button" class="rounded-circle" @click="handleScroller()"  x-data="scrollChatButton" id="scroll-chat-btn-bottom" 
+             style="position: absolute;left:94%;bottom:15%; background-color:gainsboro;" :class="{'disabled': visible}" :style="visible && {display:'hidden'  }">
+              <div class="d-flex container justify-content-center align-items-center rounded-circle" style="position:relative;height: 50px;width: 50px;"  @scroll-event.window="visible = $event.detail">
+                
+              <img class="" src="assets/down-arrow-chat.png" width="25">
+              <div class="d-flex rounded-circle align-items-center justify-content-center" style="color:white;background-color:rgb(88, 139, 175);width:30px;height:30px;margin-left:65%;margin-bottom:65%;position: absolute;">
+                <span x-text="getCurrentUnreadMessagesCount()"></span>
+              </div>
+            </div>
+            </a>
             <textarea class="form-control mb-1" id="chatTextArea" rows="3"
               @keyup.enter="handleSumbitButton"></textarea>
 
