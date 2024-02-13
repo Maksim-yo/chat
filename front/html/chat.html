@@ -16,6 +16,9 @@
     body {
       background-color: #ffffff;
       height: 100%;
+      width: 100%;
+      overflow: hidden;
+
     }
 
     .sidenav {
@@ -58,23 +61,38 @@
 
     }
 
+    .bg-message-sender {
+
+      background-color: #89CFF0;
+
+    }
+
+    .chat {
+      /* position: absolute; */
+      height: 50%;
+      max-height: 50%;
+    }
+
   </style>
 </head>
 
-<body style="overflow-y: hidden;">
-  <div class="row g-0" style="height: 100%;">
+<body>
 
+  <div class="row g-0" style="height: 100%;">
     <div class="col-md-3 mb-4 mb-md-0 border boder-2">
       <div class="row d-flex justify-content-center">
-        <div class="input-group rounded mb-2 mt-3">
-          <button type="button" class="btn ms-3" id="menu-button" onclick="openNav()">
-            <img src="https://p7.hiclipart.com/preview/616/930/362/hamburger-button-computer-icons-menu-bar-line.jpg"
-              width="30" />
+        <div class="input-group rounded mb-2 mt-3" x-data="searchInput"
+          x-init="$watch('search', value => setInputTimer())">
+          <button type="button" class="btn ms-3  px-0 py-0 my-0 " id="menu-button" onclick="openNav()">
+            <img src="assets/menu-icon.png" width="40" />
           </button>
           <div id="mySidenav" class="sidenav list-unstyled mb-0">
             <div class="d-flex flex-row ms-3">
+              <div class="d-flex" style="position: relative;display:block;">
               <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-8.webp" alt="avatar"
-                class="rounded-circle d-flex align-self-center ms-3 shadow-1-strong" width="58">
+                class="rounded-circle  ms-3 shadow-1-strong " width="58">
+              <img src="assets/online-icon.png" class="align-self-end me-auto" width="15" style="position: absolute; margin-left:75%;">
+              </div>
               <div class="pt-1 ms-3">
                 <p class="fw-bold mb-0">{{ user.nickname}}</p>
               </div>
@@ -82,31 +100,33 @@
             <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
             <a href="#" class="mt-4">Logout</a>
           </div>
-
-          <input type="search" class="form-control rounded-4 ms-3 me-4" placeholder="Search" aria-label="Search"
-            aria-describedby="search-addon" />
+          <input type="search" class="form-control rounded-4 ms-3 me-4" x-model="search" placeholder="Search"
+            aria-label="Search" aria-describedby="search-addon" />
         </div>
       </div>
-      <div class="card  ">
+      <div class="card">
         <div class="card-body mx-0 px-0 py-0 my-0 ">
 
           <div class="chatHistory" x-data>
 
             <ul class="list-unstyled mb-0 ">
-              <template x-for="[key, item] in Object.entries($store.converstationHistory.converstationHistory)", :key="key">
-                <a role="button" style="color: black;text-decoration: none;" @click="handleChoiceClick(item)">
+              <template x-for="[key, item] in Object.entries($store.converstationHistory.getConverstationHistory)" ,
+                :key="key">
+                <a role="button" style="color: black;text-decoration: none;" @click="changeCurrentChat(item)">
                   <li class="userChat p-2 border-bottom d-flex justify-content-between">
                     <div class="d-flex flex-row">
                       <img :src="item.profile_image" alt="avatar"
                         class="rounded-circle d-flex align-self-center ms-3 shadow-1-strong" width="58">
                       <div class="pt-1 ms-3">
-                        <p class="fw-bold mb-0" x-text="item.roomName"></p>
-                        <p class="small text-muted mt-1" x-text="$store.converstationHistory.getLastUserMessage(item).message">?</p>
+                        <p class="fw-bold mb-0" x-text="item.room_name"></p>
+                        <template x-if="item.messages && item.messages.length > 0">
+                          <p class="small text-muted mt-1" x-text="item.messages[item.messages.length-1].message">?</p>
+                        </template>
                       </div>
                     </div>
                     <div class="pt-1">
-                      <p class="small text-muted mb-1">Just now</p>
-                      <span class="badge bg-danger float-end">1</span>
+                      <p class="small text-muted mb-1">12:14</p>
+                      <span class="badge   float-end" style="background-color:#7F7D9C">1</span>
                     </div>
                   </li>
                 </a>
@@ -116,33 +136,62 @@
         </div>
       </div>
     </div>
-
-    <div class="col-md-6 col-lg-7 col-xl-8 align-self-end">
-      <div x-data>
-        <ul class="list-unstyled mt-2 ms-4">
-          <template x-for="(item, index) in $store.converstationHistory.currentChat">
-
-            <li class="d-flex mb-4">
-              <!-- <img :src="item.profile_image" alt="avatar" class="rounded-circle d-flex align-self-start shadow-1-strong"
+    <!-- align-seld-end -->
+    <!-- x-init="$watch($store.converstationHistory.currentChat.messages, value => $nextTick(() => {console.log('fdsfdsf')}))" -->
+    <div class="col h-100 no-gutters" x-data >
+      
+      <template  x-if="$store.converstationHistory.currentChat" id="chat-template">
+        
+        <div class="d-flex flex-column h-100 ">
+          <ul class="chat-scroller list-unstyled d-flex flex-column ms-4  mt-4" id="chat-scroller" style="height: 90%;overflow-y:scroll;">
+            <div class="mt-auto">
+            <template x-for="[id, item] in Object.entries($store.converstationHistory.currentChat.messages)" :key="id">
+              <li class="chat_message d-flex mb-4">  
+                <!-- <img :src="item.profile_image" alt="avatar" class="rounded-circle d-flex align-self-start shadow-1-strong"
                 width="50"> -->
-              <div class="card ms-3 m-0 p-0 my-auto" :class="{'bg-primary': $store.converstationHistory.isPeerIdCurrentUser(item)}" style="border-radius: 15px;">
-
-                <div class="card-body rounded-2 p-2">
-                  <div class="mb-0 " x-text="item.message" >
+                <div class="card" :class="{'bg-message-sender' : $store.converstationHistory.isPeerIdCurrentUser(item)}"
+                  style="border-radius: 20px;">
+                  <div class="card-body rounded-2 mx-0 px-2 py-2 my-0 ms-1">
+                    <div class="d-flex">
+                      <div class="d-inline-block" style="max-width:150px;word-wrap:break-word;">
+                        <div class="span" x-text="item.message"></div>
+                      </div>
+                      <div class="d-inline-block ms-2 mt-1 text-secondary">
+                        <div class="span">
+                          12:11
+                        </div>
+                      </div>
+                      <template x-if="$store.converstationHistory.isPeerIdCurrentUser(item)">
+                        <div class="d-inline-block ms-2 mt-auto">
+                          <img src="assets/check-black.png" class="mb-1" width="15" height="15">
+                        </div>
+                      </template>
+                    </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </li>
-          </template>
-        </ul>
-        <div class="col">
 
-        <textarea class="form-control" id="chatTextArea" rows="3"></textarea>
-        <button type="submit" class="btn btn-info btn-rounded float-end mb-5" value="Send"
-        onclick="handleSumbitButton();">Send</button>
-            
+              </li>
+            </template>
+          </ul>
+          <div>
+            <textarea class="form-control mb-1" id="chatTextArea" rows="3"
+              @keyup.enter="handleSumbitButton"></textarea>
+
+          </div>
         </div>
-      </div>
+      </template>
+
+      <template x-if="!$store.converstationHistory.currentChat" id="test_id">
+
+        <div class="d-flex flex-column min-vh-100 justify-content-center align-items-center">
+
+          <div class=" rounded-5 p-1" style="background-color: #ced4da;">
+            Select a chat to start start messaging
+          </div>
+        </div>
+
+      </template>
 
     </div>
 
@@ -156,4 +205,4 @@
 
 </script>
 
-</html>
+</html> 
