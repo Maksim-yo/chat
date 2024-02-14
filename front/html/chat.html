@@ -161,8 +161,8 @@
                         <div class="span" x-text="item.message"></div>
                       </div>
                       <div class="d-inline-block ms-2 mt-1 text-secondary">
-                        <div class="span">
-                          12:11
+                        <div class="span" x-text="getMessageStringDate(item.date)">
+                          
                         </div>
                       </div>
                       <template x-if="$store.converstationHistory.isPeerIdCurrentUser(item)">

@@ -34,7 +34,7 @@ function onMessage(message) {
         for (let index = 0; index < message.chats.length; index++) {
           let chat = message.chats[index];
           let newChat = {
-            id: chat.id,
+            id:  chat.id,
             peers: chat.peers,
             last_message: chat.history[Object.keys(chat.history).pop()],
             messages: [],
@@ -45,6 +45,8 @@ function onMessage(message) {
           pushNewConverstation(newChat);
           for (let i = 0; i < chat.history.length; i++) {
             chat.history[i].is_read = true;
+            chat.history[i].date = convertSecondsToDate(chat.history[i].timestamp);
+            delete chat.history[i].timestamp;
             addMessageToChat(chat.history[i], chat.id);
           }
           for (let i = 0; i < 16; i++) {
@@ -378,3 +380,20 @@ function setFindConversationResult(peers, flag = true) {
   Alpine.store('converstationHistory').setFindConversationResult(peers, flag);
 }
 
+function convertSecondsToDate(seconds){
+  let date = new Date(seconds * 1000);
+  return {
+    minutes: date.getMinutes(),
+    hours: date.getHours(),
+    day: date.getDate(),
+    month: date.getMonth() + 1,
+    year: date.getFullYear()
+  };
+}
+
+function getMessageStringDate(date){
+  // console.log(date.hours);
+  console.log(date.hours);
+
+  return date["hours"] + ":" + date["minutes"];
+}
