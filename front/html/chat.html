@@ -150,7 +150,7 @@
           <ul class="chat-scroller list-unstyled d-flex flex-column ms-4 mt-4" @scroll="scrollingHanlder()" id="chat-scroller" style="height: 90%;overflow-y:scroll;">
             <div class="mt-auto">
             <template x-for="[id, item] in Object.entries($store.converstationHistory.currentChat.messages)" :key="id">
-              <li class="chat_message d-flex mb-4">  
+              <li class="chat-message d-flex mb-4">  
                 <!-- <img :src="item.profile_image" alt="avatar" class="rounded-circle d-flex align-self-start shadow-1-strong"
                 width="50"> -->
                 <div class="card" :class="{'bg-message-sender' : $store.converstationHistory.isPeerIdCurrentUser(item)}"

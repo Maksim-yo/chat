@@ -239,6 +239,7 @@ document.addEventListener('alpine:init', () => {
         
       },
 
+
       getUnreadMessagesCount(){
         if (!this.currentChat || !this.currentChat.messages)
           return -1;
@@ -310,10 +311,11 @@ function handleScroller(){
   let elm = document.getElementById("chat-scroller");
   let lastUnreadMessageIndex = Alpine.store('converstationHistory').getFirstUnreadMessageIndex();
   if (lastUnreadMessageIndex != -1 || (elm.scrollHeight - elm.clientHeight) > 0) {
-    let chatMessage = document.getElementsByClassName('chat_message')[0];
+    let chatMessage = document.getElementsByClassName('chat-message')[lastUnreadMessageIndex - 1];
     let chatMessageStyle = getComputedStyle(chatMessage);
     let chatMessageMargin = parseInt(chatMessageStyle.marginBottom)
-    elm.scrollTop = (lastUnreadMessageIndex - 1) * (chatMessage.offsetHeight + chatMessageMargin) - elm.clientHeight;
+    let messagePosition = chatMessage.getBoundingClientRect();
+    elm.scrollTop = messagePosition.top - chatMessageMargin - elm.clientHeight;
 
   }
   else 
