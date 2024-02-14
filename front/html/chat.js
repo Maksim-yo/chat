@@ -21,6 +21,15 @@ let peerName = null;
 let isInitialized = false;
 
 chatsMap = {};
+function makeDateMessage(prevDate, currentDate){
+  console.log(prevDate)
+  if (prevDate == null)
+    return currentDate.day + " " + currentDate.monthName
+  let resString = currentDate.day + " " + currentDate.monthName;
+  if (prevDate.year != currentDate.year || (prevDate.month - currentDate.month) > 3)
+    resString += ", " + currentDate.year;
+  return resString
+} 
 
 function onMessage(message) {
 
@@ -43,11 +52,28 @@ function onMessage(message) {
             profile_image: "https://randomuser.me/api/portraits/men/1.jpg"
           }
           pushNewConverstation(newChat);
+          let prevDate = null;
+
           for (let i = 0; i < chat.history.length; i++) {
+
             chat.history[i].is_read = true;
-            chat.history[i].date = convertSecondsToDate(chat.history[i].timestamp);
+            let currentDate = convertSecondsToDate(chat.history[i].timestamp);
+            chat.history[i].date = currentDate;
             delete chat.history[i].timestamp;
+            
+            if (i == 0){
+              addMessageToChat({
+                is_date:true,
+                message: makeDateMessage(prevDate, currentDate)}, chat.id)
+              prevDate = currentDate;
+            }
+            if (prevDate.day != currentDate.day || prevDate.month != currentDate.month || prevDate.year != currentDate.year)
+              addMessageToChat({
+                is_date:true,
+                message: makeDateMessage(prevDate, currentDate)}, chat.id) 
+          
             addMessageToChat(chat.history[i], chat.id);
+            prevDate = currentDate;
           }
           for (let i = 0; i < 16; i++) {
 
@@ -394,7 +420,8 @@ function convertSecondsToDate(seconds){
     minutes: date.getMinutes(),
     hours: date.getHours(),
     day: date.getDate(),
-    month: date.getMonth() + 1,
+    monthName: date.toLocaleString('default', { month: 'long' }),
+    month: date.getMonth,
     year: date.getFullYear()
   };
 }

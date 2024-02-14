@@ -155,6 +155,18 @@
               <li class="chat-message d-flex mb-4">  
                 <!-- <img :src="item.profile_image" alt="avatar" class="rounded-circle d-flex align-self-start shadow-1-strong"
                 width="50"> -->
+                <template x-if="('is_date' in item)">
+                  <div class="card" style="border-radius: 15px;background-color: #ced4da;left:15%;">
+                    <div class="card-body mx-0 px-3 py-0 my-0 ">
+                      <div class="d-flex">
+                        <div class="d-inline-block" style="max-width:150px;word-wrap:break-word; ">
+                          <div class="span" x-text="item.message"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <template x-if="!('is_date' in item)">
                 <div class="card" :class="{'bg-message-sender' : $store.converstationHistory.isPeerIdCurrentUser(item)}"
                   style="border-radius: 20px;">
                   <div class="card-body rounded-2 mx-0 px-2 py-2 my-0 ms-1">
@@ -176,7 +188,7 @@
                     </div>
                   </div>
                 </div>
-
+              </template>
               </li>
             </template>
             <!-- <div> -->
