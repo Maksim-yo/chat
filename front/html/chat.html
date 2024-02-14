@@ -124,13 +124,15 @@
                       <div class="pt-1 ms-3">
                         <p class="fw-bold mb-0" x-text="item.room_name"></p>
                         <template x-if="item.messages && item.messages.length > 0">
-                          <p class="small text-muted mt-1" x-text="item.messages[item.messages.length-1].message">?</p>
+                          <p class="small text-muted mt-1" x-text="item.messages[item.messages.length-1].message"></p>
                         </template>
                       </div>
                     </div>
                     <div class="pt-1">
-                      <p class="small text-muted mb-1">12:14</p>
-                      <span class="badge   float-end" style="background-color:#7F7D9C">1</span>
+                      <p class="small text-muted mb-1" x-text="getMessageStringDate(item.messages[item.messages.length-1].date)"></p>
+                      <template x-if="getChatUnreadMessagesCount(item.id) !== -1">
+                      <span class="badge   float-end" style="background-color:#7F7D9C" x-text="getChatUnreadMessagesCount(item.id)"></span>
+                      </template>
                     </div>
                   </li>
                 </a>
@@ -187,9 +189,11 @@
               <div class="d-flex container justify-content-center align-items-center rounded-circle" style="position:relative;height: 50px;width: 50px;"  @scroll-event.window="visible = $event.detail">
                 
               <img class="" src="assets/down-arrow-chat.png" width="25">
+              <template x-if="getChatUnreadMessagesCount() !== -1">
               <div class="d-flex rounded-circle align-items-center justify-content-center" style="color:white;background-color:rgb(88, 139, 175);width:30px;height:30px;margin-left:65%;margin-bottom:65%;position: absolute;">
-                <span x-text="getCurrentUnreadMessagesCount()"></span>
+                <span x-text="getChatUnreadMessagesCount()"></span>
               </div>
+            </template>
             </div>
             </a>
             <textarea class="form-control mb-1" id="chatTextArea" rows="3"

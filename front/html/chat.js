@@ -62,9 +62,10 @@ function onMessage(message) {
 
             addMessageToChat({
               code: 3,
-              message: 'unread',
+              message: 'read',
               peerId: 2,
-              is_read: false,
+              is_read: true,
+              date: convertSecondsToDate(31234124124) 
             }, chat.id);
           }
          
@@ -227,12 +228,16 @@ document.addEventListener('alpine:init', () => {
         return this.currentChat.peers;
       },
 
-      getFirstUnreadMessageIndex() {
+      getFirstUnreadMessageIndex(chat_id) {
+        
+        let chat = this.converstationHistory[chat_id];
+        if (chat_id == -1)
+          chat = this.currentChat;
 
-        let count = 0;
-        if (!this.currentChat || !this.currentChat.messages)
+        if (chat === undefined)
           return -1;
-        for (let msg of this.currentChat.messages){
+        let count = 0;
+        for (let msg of chat.messages){
           count += 1;
           if (msg.is_read == false)
             return count;
@@ -242,13 +247,16 @@ document.addEventListener('alpine:init', () => {
       },
 
 
-      getUnreadMessagesCount(){
-        if (!this.currentChat || !this.currentChat.messages)
+      getUnreadMessagesCount(chat_id){
+        let chat = this.converstationHistory[chat_id];
+        if (chat_id == -1)
+          chat = this.currentChat;
+        if (chat === undefined)
           return -1;
-        let msgCount = this.getFirstUnreadMessageIndex();
+        let msgCount = this.getFirstUnreadMessageIndex(chat_id);
         if (msgCount === -1)
           return -1;
-        return this.currentChat.messages.length - this.getFirstUnreadMessageIndex() + 1;
+        return chat.messages.length - msgCount + 1;
       },
 
       isPeerIdCurrentUser(item) {
@@ -312,7 +320,7 @@ const pushNewConverstation = (elm) => {
 function handleScroller(){
   let elm = document.getElementById("chat-scroller");
   let lastUnreadMessageIndex = Alpine.store('converstationHistory').getFirstUnreadMessageIndex();
-  if (lastUnreadMessageIndex != -1 || (elm.scrollHeight - elm.clientHeight) > 0) {
+  if (lastUnreadMessageIndex !== -1 && (elm.scrollHeight - elm.clientHeight) > 0) {
     let chatMessage = document.getElementsByClassName('chat-message')[lastUnreadMessageIndex - 1];
     let chatMessageStyle = getComputedStyle(chatMessage);
     let chatMessageMargin = parseInt(chatMessageStyle.marginBottom)
@@ -364,8 +372,8 @@ function addMessageToChat(item, roomId = -1) {
 
 }
 
-function getCurrentUnreadMessagesCount(){
-  return Alpine.store('converstationHistory').getUnreadMessagesCount();
+function getChatUnreadMessagesCount(chat_id = -1){
+  return Alpine.store('converstationHistory').getUnreadMessagesCount(chat_id);
 }
 
 function scrollToBottom() {
@@ -392,8 +400,5 @@ function convertSecondsToDate(seconds){
 }
 
 function getMessageStringDate(date){
-  // console.log(date.hours);
-  console.log(date.hours);
-
   return date["hours"] + ":" + date["minutes"];
 }
