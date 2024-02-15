@@ -28,30 +28,7 @@ Peer::Peer(std::shared_ptr<AsyncWebSocket> socket, oatpp::Int32 peerId, oatpp::S
 
 }  
                                                     
-void Peer::sendMessageAsync(const oatpp::Object<BaseMessageDto>& message){
 
-    class SendMessageCoroutine : public oatpp::async::Coroutine<SendMessageCoroutine> {
-    private:
-        oatpp::async::Lock* m_lock;
-        std::shared_ptr<oatpp::websocket::AsyncWebSocket> m_websocket;
-        oatpp::String m_message;
-    public:
-
-        SendMessageCoroutine(oatpp::async::Lock* lock, const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& websocket, const oatpp::String& message)
-        : m_lock(lock)
-        , m_websocket(websocket)
-        , m_message(message)
-        {}
-
-        Action act() override {
-            return oatpp::async::synchronize(m_lock, m_websocket->sendOneFrameTextAsync(m_message)).next(finish());
-        }
-
-    };
-
-    m_asyncExecutor->execute<SendMessageCoroutine>(&m_writeLock, m_socket, m_objectMapper->writeToString(message));
-
-}
 
 void Peer::sendMessageAsync(const oatpp::String& message){
 
@@ -164,37 +141,49 @@ oatpp::async::CoroutineStarter Peer::handleMessage(oatpp::String messageData, co
             std::shared_ptr<Room> room = getRoom(newMessage->id);
             if (!room) 
                 return nullptr;
-            room->sendMessageAsync(newMessage);
+            room->sendMessageAsync(MSG(newMessage));
             break;
             }
         case MessageCodes::CODE_PEER_MESSAGE: {
             auto newMessage = m_objectMapper->readFromString<oatpp::Object<ChatMessageDto>>(messageData);
             std::shared_ptr<Room> room = getRoom(newMessage->id);
             if (!room) {        
-                room = lobby->getOrCreateRoom(mapMessageChatDto(newMessage));
+                room = lobby->getOrCreateRoom(newMessage->id);
                 addRoom(room);
             }
-            room->addHistoryMessage(newMessage);
-            room->sendMessageAsync(newMessage);
+            room->addHistoryMessage((newMessage->message));
+            room->sendMessageAsync(MSG(newMessage));
             break;  
             }
         case MessageCodes::CODE_PEER_JOINED:
             break;  
+        case MessageCodes::CODE_PEER_READ:{
+            auto newMessage = m_objectMapper->readFromString<oatpp::Object<MessageRead>>(messageData);
+            std::shared_ptr<Room> room = getRoom(newMessage->chat_id);
+            if (!room) {        
+                room = lobby->getOrCreateRoom(newMessage->chat_id);
+                addRoom(room);
+            }
+            room->markMessagesAsRead(newMessage->count);
+            room->sendMessageAsync(MSG(newMessage));
+            break;}
         case MessageCodes::CODE_PEER_LEFT:
             break;
         case MessageCodes::CODE_PEER_MESSAGE_FILE:
             break;  
         case MessageCodes::CODE_FIND_ROOMS:
         {
-            // auto newMessage = m_objectMapper->readFromString<oatpp::Object<MessageFind>>(messageData);
-            // auto query = newMessage->query;
-            // auto users = m_chatDao->getUserStartWithByNickname(query);
-            // auto resultMessage = MessageFind::createShared();
-            // resultMessage->query = query;
-            // resultMessage->users = users;
-            // resultMessage->peerId = m_peerId;
-            // resultMessage->peerNickname = m_nickname;
-            // sendMessageAsync(resultMessage);
+            auto newMessage = m_objectMapper->readFromString<oatpp::Object<MessageFind>>(messageData);
+            auto query = newMessage->query;
+            auto users = m_chatDao->getUserStartWithByNickname(query);
+            auto resultMessage = MessageFind::createShared();
+            resultMessage->query = query;
+            if (users.has_value())
+                resultMessage->users = users.value();
+            resultMessage->peerId = m_peerId;
+            resultMessage->peerNickname = m_nickname;
+            resultMessage->code = MessageCodes::CODE_FIND_ROOMS;
+            sendMessageAsync(MSG(resultMessage));
 
         }
         }
@@ -214,7 +203,7 @@ oatpp::async::CoroutineStarter Peer::readMessage(const std::shared_ptr<oatpp::we
         try {
             message = m_objectMapper->readFromString<oatpp::Object<BaseMessageDto>>(wholeMessage);
         } 
-        catch (const std::runtime_error& e) {
+         catch (const std::runtime_error& e) {
             OATPP_ASSERT(false) ;
         }        
         message->peerId = m_peerId;

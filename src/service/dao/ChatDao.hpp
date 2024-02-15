@@ -18,6 +18,7 @@ public:
     std::optional<oatpp::Object<UserToken>> getTokenByUserId(oatpp::Object<UserDto> user);
     std::optional<oatpp::Vector<oatpp::Object<PeerDto>>>   getPeersInChat(oatpp::Int32 id);
     std::optional<oatpp::Vector<oatpp::Object<ChatDto>>>   getUserConverstationsHisotry(oatpp::Int32 id);
+    std::optional<oatpp::Object<ChatDto>>                  getChatById(oatpp::Int32 od);
     std::optional<oatpp::Vector<oatpp::Object<MessageDto>>> getUsersHistoryInChat(oatpp::Int32 chatId, oatpp::Int32 count = 100);
     std::optional<oatpp::Object<UserDto>>   getUserByLoginAndPassword(oatpp::String login, oatpp::String password);
     std::optional<oatpp::Vector<oatpp::Object<PeerDto>>>   getUserStartWithByNickname(oatpp::String name);

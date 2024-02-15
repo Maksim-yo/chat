@@ -49,7 +49,7 @@ QUERY(getUserById,
       PARAM(oatpp::Int32, id))
 
 QUERY(getUserStartWithByNickname, 
-      "SELECT id, nickname FROM app_user WHERE nickname LIKE :query",
+      "SELECT app_user.id as \"peerId\", app_user.nickname as \"peerName\" FROM app_user WHERE nickname LIKE :query",
       PREPARE(true),
       PARAM(oatpp::String, query))
 
@@ -102,9 +102,14 @@ QUERY(getUserConverstationsHisotry,
       PREPARE(true),
       PARAM(oatpp::Int32, expiry))    
 QUERY(createChatMessage,
-      "INSERT INTO chat_line (chat_id, user_id, line_text, created_at) VALUES (msg.id, msg.peerId, msg.message.message, msg.timestamp);",
+      "INSERT INTO chat_line (chat_id, user_id, line_text, created_at) VALUES (:msg.id, :msg.peerId, :msg.message.message, :msg.timestamp);",
       PREPARE(true),
       PARAM(oatpp::Object<ChatMessageDto>, msg))
+
+QUERY(getChatById,
+      "SELECT * FROM chat WHERE id=:chat_id",
+      PREPARE(true),
+      PARAM(oatpp::Int32, chat_id))
 };
 
 

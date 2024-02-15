@@ -69,8 +69,6 @@ protected:
 public:
     Peer(std::shared_ptr<AsyncWebSocket> socket, oatpp::Int32 peerId, oatpp::String nickname,  Lobby* lobby);   
 
-
-    void sendMessageAsync(const oatpp::Object<BaseMessageDto>& message);
     void sendMessageAsync(const oatpp::String& message);
     void sendPingAsyncWait();
     void sendPingAsync();

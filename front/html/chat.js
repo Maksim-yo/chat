@@ -8,10 +8,11 @@ let CODE_PEER_LEFT = 2;
 let CODE_PEER_MESSAGE = 3;
 let CODE_PEER_MESSAGE_FILE = 4;
 let CODE_PEER_IS_TYPING = 5;
-
-let CODE_FILE_SHARE = 6;
-let CODE_FILE_REQUEST_CHUNK = 7;
-let CODE_FILE_CHUNK_DATA = 8;
+let CODE_PEER_READ = 6;
+let CODE_PEER_DELIVERED = 7;
+let CODE_FILE_SHARE = 8;
+let CODE_FILE_REQUEST_CHUNK = 9;
+let CODE_FILE_CHUNK_DATA = 10;
 
 let CODE_FIND_ROOMS = 15;
 
@@ -32,7 +33,8 @@ function makeDateMessage(prevDate, currentDate){
 } 
 
 function onMessage(message) {
-
+  if (message.peerId === peerId)
+    return;
   switch (message.code) {
 
     case CODE_INFO:{
@@ -71,28 +73,8 @@ function onMessage(message) {
               addMessageToChat({
                 is_date:true,
                 message: makeDateMessage(prevDate, currentDate)}, chat.id) 
-          
             addMessageToChat(chat.history[i], chat.id);
             prevDate = currentDate;
-          }
-          for (let i = 0; i < 16; i++) {
-
-            addMessageToChat({
-              code: 3,
-              message: 'read',
-              peerId: 2,
-              is_read: true,
-            }, chat.id);
-          }
-          for (let i = 0; i <11 ; i++) {
-
-            addMessageToChat({
-              code: 3,
-              message: 'read',
-              peerId: 2,
-              is_read: true,
-              date: convertSecondsToDate(31234124124) 
-            }, chat.id);
           }
          
         }
@@ -100,7 +82,9 @@ function onMessage(message) {
       }
   }
   break;
-
+  case CODE_PEER_READ:
+  markMessagesAsRead(message.chat_id, message.count);
+    break;
         case CODE_PEER_JOINED:
   break;
 
@@ -108,9 +92,7 @@ function onMessage(message) {
   break;           
 
         case CODE_PEER_MESSAGE:
-
-  if (message.peerId !== peerId)
-    addMessageToChat(message);
+              addMessageToChat(message.message);
   break;
 
         case CODE_PEER_IS_TYPING:
@@ -155,11 +137,14 @@ function handleSumbitButton() {
       peerId: peerId,
       peerNickname: peerName,
       code: CODE_PEER_MESSAGE,
+      timestamp: new Date().getSeconds(),
       message: {
         peerId: peerId,
         peerNickname: peerName,
         code: 3,
-        message: outgoingMessage
+        message: outgoingMessage,
+        is_read: false,
+        timestamp: new Date().getSeconds()
       },
       peers: getCurrentChatPeers(),
       history: []
@@ -263,15 +248,36 @@ document.addEventListener('alpine:init', () => {
           return -1;
         let count = 0;
         for (let msg of chat.messages){
-          count += 1;
-          if (msg.is_read == false)
+          if (msg.is_read === false)
             return count;
+          count += 1;
+
         }
         return -1;
         
       },
+      getFirstUnreadMessage(chat_id = -1){
 
+        let chat = this.converstationHistory[chat_id];
+        if (chat_id == -1)
+          chat = this.currentChat;
 
+        let index = this.getFirstUnreadMessageIndex(chat_id);
+        if (index == -1)
+          return null;
+        return chat.messages[index];
+      },
+
+      markMessagesAsRead(chat_id, count){
+        let chat = this.converstationHistory[chat_id];
+        let messageIndex = this.getFirstUnreadMessageIndex(chat_id);
+        let c = 0
+        while (count != c){
+          console.log(messageIndex + c);
+          this.converstationHistory[chat_id].messages[messageIndex + c].is_read = true;
+          c++;
+        }
+      },
       getUnreadMessagesCount(chat_id){
         let chat = this.converstationHistory[chat_id];
         if (chat_id == -1)
@@ -279,9 +285,10 @@ document.addEventListener('alpine:init', () => {
         if (chat === undefined)
           return -1;
         let msgCount = this.getFirstUnreadMessageIndex(chat_id);
-        if (msgCount === -1)
+        let msg = this.getFirstUnreadMessage(chat_id);
+        if (msgCount === -1 || msg.peerId == peerId)
           return -1;
-        return chat.messages.length - msgCount + 1;
+        return chat.messages.length - msgCount;
       },
 
       isPeerIdCurrentUser(item) {
@@ -358,6 +365,37 @@ function handleScroller(){
     scrollToBottom();
 };
 function scrollingHanlder(){
+  let elm = document.getElementById("chat-scroller");
+  let messages = document.getElementsByClassName('chat-message');
+  let lastUnreadMessageIndex = Alpine.store('converstationHistory').getFirstUnreadMessageIndex();
+  let firstMessage = messages[lastUnreadMessageIndex - 1];
+  let currentMessage = firstMessage;
+  let count = 0;
+  let msgPeerId = null; 
+  if (lastUnreadMessageIndex != -1)
+    msgPeerId = Alpine.store('converstationHistory').getFirstUnreadMessage().peerId;
+
+  while (lastUnreadMessageIndex !== -1 && msgPeerId != peerId && currentMessage.getBoundingClientRect().bottom + elm.scrollTop <= elm.scrollTop + elm.clientHeight)
+  {
+    count++;
+    if (lastUnreadMessageIndex > messages.length)
+      break;
+    let message = messages[lastUnreadMessageIndex].querySelector('.span').textContent;
+    currentMessage = messages[lastUnreadMessageIndex];
+    lastUnreadMessageIndex++;
+    markMessagesAsRead(getCurrentChatId(), 1);
+  }
+
+  
+  let msg = {
+    peerId: peerId,
+    peerNickname: peerName,
+    code: CODE_PEER_READ,
+    count: count,
+    chat_id: getCurrentChatId()
+  }
+  if (count > 0)
+    socketSendNextData(JSON.stringify(msg));
   // let elm = document.getElementById("chat-scroller");
   // let lastUnreadMessageIndex = Alpine.store('converstationHistory').getLastUnreadMessageIndex();
   // let maxScroll = (elm.scrollHeight - elm.clientHeight);
@@ -428,4 +466,8 @@ function convertSecondsToDate(seconds){
 
 function getMessageStringDate(date){
   return date["hours"] + ":" + date["minutes"];
+}
+
+function markMessagesAsRead(chat_id, count){
+  Alpine.store('converstationHistory').markMessagesAsRead(chat_id, count);
 }

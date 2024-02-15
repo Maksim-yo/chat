@@ -7,7 +7,6 @@
 #include <unordered_map>
 
 #include "dto/DTOs.hpp"
-#include "AbstractRoom.hpp"
 #include "dao/ChatDao.hpp"
 class Peer;
 class Lobby;
@@ -15,9 +14,11 @@ class Room {
 private:
     oatpp::Int32 m_id;
     oatpp::Vector<oatpp::Object<MessageDto>> m_messageHistory;
+    oatpp::Vector<oatpp::Object<MessageDto>> m_changedMessages;
     oatpp::Vector<oatpp::Int32> m_users;
     std::mutex m_historyLock;
     std::mutex m_peerByIdLock;
+    std::mutex m_changedMessagesLock;
     std::mutex m_usersLock;
     Lobby* lobby;
 
@@ -27,14 +28,8 @@ private:
 public:
     Room(oatpp::Object<ChatDto> chatDto, Lobby* lobby);
     oatpp::Int32 getId();
-    void addPeer(const Peer& peer);
-    void welcomePeer(const Peer& peer);
-    void goodbyePeer(const Peer& peer);
-    void removePeer(oatpp::Int32  peerId);
-    void sendMessageAsync(const oatpp::Object<ChatMessageDto>& message) ;
-    // void sendMessageToPeerAsync(const oatpp::Object<BaseMessageDto>& message, );
-    void addHistoryMessage(const oatpp::Object<ChatMessageDto>& message) ;
-
+    void sendMessageAsync(const oatpp::String& message) ;
+    void markMessagesAsRead(int count);
+    void addHistoryMessage(const oatpp::Object<MessageDto>& message);
 };
-
 #endif

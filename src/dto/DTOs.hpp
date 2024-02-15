@@ -15,21 +15,23 @@ ENUM(MessageCodes, v_int32,
   VALUE(CODE_PEER_MESSAGE, 3),
   VALUE(CODE_PEER_MESSAGE_FILE, 4),
   VALUE(CODE_PEER_IS_TYPING, 5),
+  VALUE(CODE_PEER_READ, 6),
+  VALUE(CODE_PEER_DELIVERED, 7),
 
-  VALUE(CODE_FILE_SHARE, 6),
-  VALUE(CODE_FILE_REQUEST_CHUNK, 7),
-  VALUE(CODE_FILE_CHUNK_DATA, 8),
+  VALUE(CODE_FILE_SHARE, 8),
+  VALUE(CODE_FILE_REQUEST_CHUNK, 9),
+  VALUE(CODE_FILE_CHUNK_DATA, 10),
 
-  VALUE(CODE_API_ERROR, 9),
+  VALUE(CODE_API_ERROR, 11),
   
-  VALUE(CODE_SECURE_ON, 10),
-  VALUE(CODE_SECURE_OFF, 11),
+  VALUE(CODE_SECURE_ON, 12),
+  VALUE(CODE_SECURE_OFF, 13),
 
-  VALUE(CODE_ONLINE, 12),
-  VALUE(CODE_OFFLINE, 13),
+  VALUE(CODE_ONLINE, 14),
+  VALUE(CODE_OFFLINE, 15),
 
-  VALUE(CODE_CHAT_INFO, 14),
-  VALUE(CODE_FIND_ROOMS, 15)
+  VALUE(CODE_CHAT_INFO, 16),
+  VALUE(CODE_FIND_ROOMS, 17)
 );
 
 class PeerDto : public oatpp::DTO {
@@ -94,7 +96,9 @@ public:
 class MessageDto: public BaseMessageDto {
 public:
   DTO_INIT(MessageDto, BaseMessageDto)
+  DTO_FIELD(oatpp::Int32, id);
   DTO_FIELD(oatpp::String, message);
+  DTO_FIELD(oatpp::Boolean, is_read);
 
 };
 // class ChatMessageDto: public BaseMessageDto {
@@ -138,6 +142,14 @@ public:
   DTO_INIT(MessageFind, BaseMessageDto)
   DTO_FIELD(String, query);
   DTO_FIELD(Vector<Object<PeerDto>>, users);
+};
+
+class MessageRead: public BaseMessageDto {
+public:
+  DTO_INIT(MessageRead, BaseMessageDto)
+  DTO_FIELD(Int32, chat_id);
+  DTO_FIELD(Int32, count);
+
 };
 
 

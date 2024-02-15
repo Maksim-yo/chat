@@ -3,16 +3,16 @@
 #include "oatpp/core/utils/ConversionUtils.hpp"
 
 
-// v_int32 Lobby::obtainNewUserId() {
-//   return m_peerIdCounter ++;
-// }
 
-std::shared_ptr<Room> Lobby::getOrCreateRoom(oatpp::Object<ChatDto> chatDto)
+std::shared_ptr<Room> Lobby::getOrCreateRoom(oatpp::Int32 chat_id)
 {
   std::lock_guard<std::mutex> lock(m_roomsMutex);
-  std::shared_ptr<Room>& room = m_rooms[chatDto->id];
+  std::shared_ptr<Room>& room = m_rooms[chat_id];
   if(!room) {
-    room = std::make_shared<Room>(chatDto, this);
+    auto chat = m_chatDao->getChatById(chat_id);
+    OATPP_ASSERT(chat.has_value());
+    room = std::make_shared<Room>(chat.value(), this);
+    
   }
   return room;
 
