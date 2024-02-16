@@ -23,7 +23,6 @@ let isInitialized = false;
 
 chatsMap = {};
 function makeDateMessage(prevDate, currentDate){
-  console.log(prevDate)
   if (prevDate == null)
     return currentDate.day + " " + currentDate.monthName
   let resString = currentDate.day + " " + currentDate.monthName;
@@ -92,7 +91,7 @@ function onMessage(message) {
   break;           
 
         case CODE_PEER_MESSAGE:
-              addMessageToChat(message.message);
+              addMessageToChat(message.message, message.id);
   break;
 
         case CODE_PEER_IS_TYPING:
@@ -428,6 +427,7 @@ function getCurrentChatPeers() {
 }
 
 function addMessageToChat(item, roomId = -1) {
+  console.log(roomId);
   Alpine.store('converstationHistory').addMessageToChat(item, roomId);
   if (roomId != -1)
     return;
