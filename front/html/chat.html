@@ -210,9 +210,10 @@
       </ul>
 
       <div>
-        <a type="button" class="rounded-circle" @click="handleScroller()" x-data="scrollChatButton"
-          id="scroll-chat-btn-bottom" style="position: absolute;left:94%;bottom:15%; background-color:gainsboro;"
-          :class="{'disabled': visible}" :style="visible && {display:'hidden'  }">
+        <template x-if="$store.scrollChatButton.visible">
+
+        <a type="button" class="rounded-circle" @click="handleScroller()" 
+          id="scroll-chat-btn-bottom" style="position: absolute;left:94%;bottom:15%; background-color:gainsboro;      animation-duration: 3s;">
           <div class="d-flex container justify-content-center align-items-center rounded-circle"
             style="position:relative;height: 50px;width: 50px;" @scroll-event.window="visible = $event.detail">
 
@@ -225,6 +226,8 @@
             </template>
           </div>
         </a>
+      </template>
+
         <textarea class="form-control mb-1" id="chatTextArea" rows="3" @keyup.enter="handleSumbitButton"></textarea>
 
       </div>

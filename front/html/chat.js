@@ -297,9 +297,9 @@ document.addEventListener('alpine:init', () => {
       },
 
     }),
-    Alpine.data('scrollChatButton', () => ({
-      visible: true
-    })),
+    Alpine.store('scrollChatButton', {
+      visible: false
+    }),
     Alpine.data("searchInput", () => ({
       search: '',
       inputDelay: 700,
@@ -395,21 +395,24 @@ function scrollingHanlder(){
   }
   if (count > 0)
     socketSendNextData(JSON.stringify(msg));
-  // let elm = document.getElementById("chat-scroller");
-  // let lastUnreadMessageIndex = Alpine.store('converstationHistory').getLastUnreadMessageIndex();
-  // let maxScroll = (elm.scrollHeight - elm.clientHeight);
-  // if ((maxScroll - elm.clientHeight) > elm.scrollTop) {
-  //   let scrollChatBtn = document.getElementById('scroll-chat-btn-bottom');
-  //   const event = new CustomEvent("scroll-event", { bubbles: true, detail: true });
-  //   Alpine.nextTick(() => document.dispatchEvent(event));
-  // }
-  // else {
+
+    handleScrollButton()
+
+}
+
+
+function handleScrollButton(){
+  let elm = document.getElementById("chat-scroller");
+  let lastUnreadMessageIndex = Alpine.store('converstationHistory').getFirstUnreadMessageIndex();
+  let maxScroll = (elm.scrollHeight - elm.clientHeight);
+  if ((maxScroll - elm.clientHeight) > elm.scrollTop) {
+    Alpine.store('scrollChatButton').visible = true;
+  }
+  else {
     
-  //   const event = new CustomEvent("scroll-event", { bubbles: true, detail: false });
-  //   Alpine.nextTick(() => document.dispatchEvent(event));
-  // }
-
-
+    Alpine.store('scrollChatButton').visible = false;
+  }
+  
 }
 function changeCurrentChat(item) {
   Alpine.store('converstationHistory').changeCurrentChat(item);
