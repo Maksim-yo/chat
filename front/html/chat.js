@@ -57,7 +57,6 @@ function onMessage(message) {
 
           for (let i = 0; i < chat.history.length; i++) {
 
-            chat.history[i].is_read = true;
             addMessageToChat(chat.history[i], chat.id);
           }
           
@@ -76,6 +75,7 @@ function onMessage(message) {
   break;           
 
         case CODE_PEER_MESSAGE:
+          
               addMessageToChat(message.message, message.id);
   break;
 
@@ -133,9 +133,11 @@ function handleSumbitButton() {
       peers: getCurrentChatPeers(),
       history: []
     }
-    addMessageToChat(chatMessage.message);
+    addMessageToChat(chatMessage.message, getCurrentChatId());
     document.getElementById("chatTextArea").value = "";
     socketSendNextData(JSON.stringify(chatMessage));
+    Alpine.nextTick(() => scrollToBottom())
+
   }
 
   return false;
@@ -236,7 +238,9 @@ document.addEventListener('alpine:init', () => {
         chat.messages[message.id] = message;
       },
       getCurrentChatId() {
-        return this.currentChat.id;
+        if (this.currentChat !== null)
+          return this.currentChat.id;
+        return null;
       },
       getCurrentChatPeers() {
         return this.currentChat.peers;
@@ -380,9 +384,9 @@ function scrollingHanlder(){
 
   while (lastUnreadMessageIndex !== -1 && msgPeerId != peerId && currentMessage.getBoundingClientRect().bottom + elm.scrollTop <= elm.scrollTop + elm.clientHeight)
   {
-    count++;
-    if (lastUnreadMessageIndex > messages.length)
+    if (lastUnreadMessageIndex >= messages.length)
       break;
+    count++;
     let message = messages[lastUnreadMessageIndex].querySelector('.span').textContent;
     currentMessage = messages[lastUnreadMessageIndex];
     lastUnreadMessageIndex++;
@@ -422,7 +426,7 @@ function changeCurrentChat(item) {
   Alpine.store('converstationHistory').changeCurrentChat(item);
 
   
-  Alpine.nextTick(() => handleScroller());
+  Alpine.nextTick(() => scrollingHanlder());
 }
 
 function getCurrentChatId() {
@@ -436,9 +440,14 @@ function getCurrentChatPeers() {
 function addMessageToChat(item, roomId = -1) {
   console.log(roomId);
   Alpine.store('converstationHistory').addMessageToChat(item, roomId);
-  if (roomId != -1)
+  if (roomId != getCurrentChatId())
     return;
-  Alpine.nextTick(() => scrollToBottom());
+  let elm = document.getElementById("chat-scroller");
+  var maxScroll = elm.scrollHeight - elm.clientHeight;
+  if (maxScroll - 5 <= elm.scrollTop && elm.scrollTop <= maxScroll + 5)
+    Alpine.nextTick(() => {scrollToBottom()});
+  
+  Alpine.nextTick(() => scrollingHanlder());
 
 
 }
@@ -448,8 +457,7 @@ function getChatUnreadMessagesCount(chat_id = -1){
 }
 
 function scrollToBottom() {
-  let elm = document.getElementById("chat-scroller");
-
+    let elm = document.getElementById("chat-scroller");
     var maxScroll = elm.scrollHeight - elm.clientHeight;
     elm.scrollTop = maxScroll;
 

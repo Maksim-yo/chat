@@ -12,6 +12,7 @@ class MessageDo : public oatpp::DTO {
 
     DTO_INIT(MessageDo, DTO)
     DTO_FIELD(Int32, id);
+    DTO_FIELD(Boolean, is_read);
     DTO_FIELD(Int32, chat_id);
     DTO_FIELD(Int32, user_id);
     DTO_FIELD(String, line_text);

@@ -28,6 +28,7 @@ namespace {
         messageDto->message = msg->line_text;
         messageDto->id = msg->id;
         messageDto->code = MessageCodes::CODE_PEER_MESSAGE;
+        messageDto->is_read = msg->is_read;
         return messageDto;
         }
 
