@@ -46,9 +46,9 @@ protected:
 
     oatpp::String m_nickname;
     oatpp::Int32 m_peerId;
-     Lobby* lobby;
+    Lobby* lobby;
 
-    std::unordered_map<oatpp::Int32, std::shared_ptr<Room>> m_rooms;    // key - id of peer
+    std::unordered_map<oatpp::Int32, std::shared_ptr<Room>> m_rooms;  
     std::mutex m_roomsMutex;
     std::atomic<v_int32> m_pingCounter;
 

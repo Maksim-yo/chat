@@ -15,7 +15,7 @@ private:
     oatpp::Int32 m_id;
     oatpp::Vector<oatpp::Object<MessageDto>> m_messageHistory;
     oatpp::Vector<oatpp::Object<MessageDto>> m_changedMessages;
-    oatpp::Vector<oatpp::Int32> m_users;
+    oatpp::Vector<oatpp::Object<PeerDto>> m_users;
     std::mutex m_historyLock;
     std::mutex m_peerByIdLock;
     std::mutex m_changedMessagesLock;
@@ -31,5 +31,6 @@ public:
     void sendMessageAsync(const oatpp::String& message) ;
     void markMessagesAsRead(int count);
     void addHistoryMessage(const oatpp::Object<MessageDto>& message);
+    oatpp::Object<ChatDto> getChatDto();
 };
 #endif

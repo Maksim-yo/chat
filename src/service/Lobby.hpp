@@ -32,6 +32,7 @@ public:
 
   std::shared_ptr<Room> getOrCreateRoom(oatpp::Int32 chat_id);
   std::shared_ptr<Room> getRoom(oatpp::Int32 roomId);
+  void addRoom(std::shared_ptr<Room> room);
   void onAfterCreate_NonBlocking(const std::shared_ptr<AsyncWebSocket>& socket, const std::shared_ptr<const ParameterMap>& params) override;
 
   void onBeforeDestroy_NonBlocking(const std::shared_ptr<AsyncWebSocket>& socket) override;

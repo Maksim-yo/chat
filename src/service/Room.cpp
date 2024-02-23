@@ -4,9 +4,9 @@
 
 Room::Room(oatpp::Object<ChatDto> chatDto, Lobby* lobby) : m_id(chatDto->id), lobby(lobby), m_messageHistory(chatDto->history), m_users({}), m_changedMessages({})
 {
-    m_users->resize(chatDto->peers->size());
-    if (m_users->size() != 0)
-        std::transform(chatDto->peers->begin(), chatDto->peers->end(), m_users->begin(), [](oatpp::Object<PeerDto> peer) {return peer->peerId;});     
+    if (chatDto->peers->size() != 0)
+
+        std::for_each(chatDto->peers->begin(), chatDto->peers->end(), [this](oatpp::Object<PeerDto> peer) {m_users->emplace_back(peer);});     
 }
 
 
@@ -22,7 +22,7 @@ void Room::sendMessageAsync(const oatpp::String& message)
     lobby->peersLock();
     for (auto it = m_users->begin(); it != m_users->end(); it++){
         auto peers = lobby->getPeers();
-        auto peer = peers.find(*it);
+        auto peer = peers.find((*it)->peerId);
         if (peer != peers.end())
             peer->second->sendMessageAsync(message);
     }
@@ -51,5 +51,23 @@ void Room::addHistoryMessage(const oatpp::Object<MessageDto>& message)
 {
     std::lock_guard<std::mutex> lock(m_historyLock);
     m_messageHistory->push_back(message);
+}
+
+oatpp::Object<ChatDto> Room::getChatDto()
+{
+    auto chat = ChatDto::createShared();
+    oatpp::Vector<oatpp::Object<MessageDto>> newChatHistory = m_messageHistory;
+    for (auto itChatHistory = newChatHistory->begin(); itChatHistory != newChatHistory->end(); itChatHistory++ ){
+
+        for (auto itChangedMessages = m_changedMessages->begin(); itChangedMessages != m_changedMessages->end(); itChangedMessages++ ){
+            if ((*itChangedMessages)->id == (*itChatHistory)->id){
+                (*itChatHistory) = (*itChangedMessages);
+            }
+        }
+    }
+    chat->history = m_messageHistory;
+    chat->peers = m_users;
+    chat->id = m_id;
+    return chat;
 }
 

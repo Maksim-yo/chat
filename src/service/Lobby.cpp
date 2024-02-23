@@ -27,6 +27,12 @@ std::shared_ptr<Room> Lobby::getRoom(oatpp::Int32 roomId) {
   return nullptr;
 }
 
+void Lobby::addRoom(std::shared_ptr<Room> room){
+
+  std::lock_guard<std::mutex> lock(m_roomsMutex);
+  m_rooms[room->getId()] = room;
+
+}
 void Lobby::onAfterCreate_NonBlocking(const std::shared_ptr<AsyncWebSocket>& socket, const std::shared_ptr<const ParameterMap>& params) {
 
   std::lock_guard<std::mutex> mtx(m_peersMutex);  

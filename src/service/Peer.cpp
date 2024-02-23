@@ -22,8 +22,18 @@ Peer::Peer(std::shared_ptr<AsyncWebSocket> socket, oatpp::Int32 peerId, oatpp::S
         message->peerNickname = m_nickname;
         message->code = MessageCodes::CODE_INFO;
         message->chats = {};
-        if (converstationsHistory.has_value())
+        if (converstationsHistory.has_value()){
             message->chats = converstationsHistory.value();
+            for (auto it = converstationsHistory.value()->begin(); it != converstationsHistory.value()->end(); it++ ){
+                auto room = lobby->getRoom((*it)->id);
+                if (room == nullptr)
+                    addRoom(std::make_shared<Room>(*it, lobby));
+                else {
+                    *it = room->getChatDto();
+                    
+                }
+            }
+        }
         sendMessageAsync(MSG(message)); 
 
 }  
@@ -118,18 +128,13 @@ void Peer::sendPingAsyncWait(){
 }
 
 std::shared_ptr<Room> Peer::getRoom(oatpp::Int32 roomId) {
-    std::lock_guard<std::mutex> lock(m_roomsMutex);
-    auto it = m_rooms.find(roomId);
-    if(it != m_rooms.end()) {
-        return it->second;
-    }
-    return nullptr;
+    auto room = lobby->getRoom(roomId);
+    return room;
 }
 
 void Peer::addRoom(const std::shared_ptr<Room>& room)
 {
-  std::lock_guard<std::mutex> lock(m_roomsMutex);
-  m_rooms[room->getId()] = room;
+  lobby->addRoom(room);
 }
 
 
@@ -148,10 +153,9 @@ oatpp::async::CoroutineStarter Peer::handleMessage(oatpp::String messageData, co
             auto newMessage = m_objectMapper->readFromString<oatpp::Object<ChatMessageDto>>(messageData);
             std::shared_ptr<Room> room = getRoom(newMessage->id);
             if (!room) {        
-                room = lobby->getOrCreateRoom(newMessage->id);
-                addRoom(room);
+                throw std::runtime_error("CODE_PEER_MESSAGE");
             }
-            room->addHistoryMessage((newMessage->message));
+            room->addHistoryMessage(newMessage->message);
             room->sendMessageAsync(MSG(newMessage));
             break;  
             }
@@ -161,8 +165,8 @@ oatpp::async::CoroutineStarter Peer::handleMessage(oatpp::String messageData, co
             auto newMessage = m_objectMapper->readFromString<oatpp::Object<MessageRead>>(messageData);
             std::shared_ptr<Room> room = getRoom(newMessage->chat_id);
             if (!room) {        
-                room = lobby->getOrCreateRoom(newMessage->chat_id);
-                addRoom(room);
+                throw std::runtime_error("CODE_PEER_JOINED");
+
             }
             room->markMessagesAsRead(newMessage->count);
             room->sendMessageAsync(MSG(newMessage));
