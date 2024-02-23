@@ -130,7 +130,7 @@
                     </div>
                     <div class="pt-1">
                       <p class="small text-muted mb-1"
-                        x-text="getMessageStringDate(item.messages[item.messages.length-1].date)"></p>
+                        x-text="getMessageStringDate(item.messages[item.messages.length-1].timestamp)"></p>
                       <template x-if="getChatUnreadMessagesCount(item.id) !== -1">
                         <span class="badge   float-end" style="background-color:#7F7D9C"
                           x-text="getChatUnreadMessagesCount(item.id)"></span>
@@ -180,7 +180,7 @@
                             <div class="span" x-text="item.message"></div>
                           </div>
                           <div class="d-inline-block ms-2 mt-1 text-secondary">
-                            <div class="span" x-text="getMessageStringDate(item.date)">
+                            <div class="span" x-text="getMessageStringDate(item.timestamp)">
 
                             </div>
                           </div>

@@ -58,11 +58,7 @@ function onMessage(message) {
           for (let i = 0; i < chat.history.length; i++) {
 
             chat.history[i].is_read = true;
-            // let currentDate = convertSecondsToDate(chat.history[i].timestamp);
-            // chat.history[i].date = currentDate;
-            // delete chat.history[i].timestamp;
             addMessageToChat(chat.history[i], chat.id);
-            // prevDate = currentDate;
           }
           
         }
@@ -125,14 +121,14 @@ function handleSumbitButton() {
       peerId: peerId,
       peerNickname: peerName,
       code: CODE_PEER_MESSAGE,
-      timestamp: new Date().getSeconds(),
+      timestamp: Math.floor(new Date() / 1000),
       message: {
         peerId: peerId,
         peerNickname: peerName,
         code: 3,
         message: outgoingMessage,
         is_read: false,
-        timestamp: new Date().getSeconds()
+        timestamp: Math.floor(new Date() / 1000)
       },
       peers: getCurrentChatPeers(),
       history: []
@@ -475,7 +471,8 @@ function convertSecondsToDate(seconds){
   };
 }
 
-function getMessageStringDate(date){
+function getMessageStringDate(timestamp){
+  date = convertSecondsToDate(timestamp);
   return date["hours"] + ":" + date["minutes"];
 }
 
