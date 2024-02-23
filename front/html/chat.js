@@ -58,24 +58,13 @@ function onMessage(message) {
           for (let i = 0; i < chat.history.length; i++) {
 
             chat.history[i].is_read = true;
-            let currentDate = convertSecondsToDate(chat.history[i].timestamp);
-            chat.history[i].date = currentDate;
-            delete chat.history[i].timestamp;
-            
-            if (i == 0){
-              addMessageToChat({
-                is_date:true,
-                message: makeDateMessage(prevDate, currentDate)}, chat.id)
-              prevDate = currentDate;
-            }
-            if (prevDate.day != currentDate.day || prevDate.month != currentDate.month || prevDate.year != currentDate.year)
-              addMessageToChat({
-                is_date:true,
-                message: makeDateMessage(prevDate, currentDate)}, chat.id) 
+            // let currentDate = convertSecondsToDate(chat.history[i].timestamp);
+            // chat.history[i].date = currentDate;
+            // delete chat.history[i].timestamp;
             addMessageToChat(chat.history[i], chat.id);
-            prevDate = currentDate;
+            // prevDate = currentDate;
           }
-         
+          
         }
 
       }
@@ -225,10 +214,29 @@ document.addEventListener('alpine:init', () => {
         let lastMessage;
         if (chat.messages.length > 0)
           lastMessage = chat.messages[chat.messages.length - 1];
-        if (lastMessage === undefined)
-          message.id = 0;
-        else
-          message.id = lastMessage.id + 1;
+        if (lastMessage === undefined){
+          chat.messages[0] = { 
+            id: 0,
+            is_date:true,
+            message: makeDateMessage(null, convertSecondsToDate(message.timestamp))
+          };
+          message.id = 1;
+        }
+        else {
+          lastMessageDate = convertSecondsToDate(lastMessage.timestamp);
+          currentMessageDate = convertSecondsToDate(message.timestamp);
+          message_id = lastMessage.id;
+          if (lastMessageDate.day != currentMessageDate.day || lastMessageDate.month != currentMessageDate.month || lastMessageDate.year != currentMessageDate.year)
+          {
+            message_id++;
+            chat.messages[message_id] = { 
+            id: message_id,
+            is_date:true,
+            message: makeDateMessage(lastMessageDate, currentMessageDate)
+          }; 
+        }
+          message.id = message_id + 1;
+        }
         chat.messages[message.id] = message;
       },
       getCurrentChatId() {
