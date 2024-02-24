@@ -358,14 +358,12 @@ const pushNewConverstation = (elm) => {
 
 function handleScroller(){
   let elm = document.getElementById("chat-scroller");
-  let lastUnreadMessageIndex = Alpine.store('converstationHistory').getFirstUnreadMessageIndex();
-  if (lastUnreadMessageIndex !== -1 && (elm.scrollHeight - elm.clientHeight) > 0) {
+  let firstUnreadMessageIndex = Alpine.store('converstationHistory').getFirstUnreadMessageIndex();
+  if (firstUnreadMessageIndex !== -1 && (elm.scrollHeight - elm.clientHeight) > 0) {
 
-    let chatMessage = document.getElementsByClassName('chat-message')[lastUnreadMessageIndex-1];
-    let chatMessageStyle = getComputedStyle(chatMessage);
-    let chatMessageMargin = parseInt(chatMessageStyle.marginBottom)
+    let chatMessage = document.getElementsByClassName('chat-message')[firstUnreadMessageIndex-1];
     let messagePosition = chatMessage.getBoundingClientRect();
-    elm.scrollTop = ( (elm.scrollTop + messagePosition.top) - chatMessageMargin - elm.clientHeight);
+    elm.scrollTop = ( (elm.scrollTop + messagePosition.top) );
 
   }
   else 
@@ -412,8 +410,9 @@ function scrollingHanlder(){
 function handleScrollButton(){
   let elm = document.getElementById("chat-scroller");
   let lastUnreadMessageIndex = Alpine.store('converstationHistory').getFirstUnreadMessageIndex();
+  let lastUnreadMessage = Alpine.store('converstationHistory').getFirstUnreadMessage();
   let maxScroll = (elm.scrollHeight - elm.clientHeight);
-  if ((maxScroll - elm.clientHeight) > elm.scrollTop) {
+  if ((maxScroll - elm.clientHeight) > elm.scrollTop || lastUnreadMessageIndex != -1 && lastUnreadMessage.peerId != peerId) {
     Alpine.store('scrollChatButton').visible = true;
   }
   else {
@@ -426,6 +425,7 @@ function changeCurrentChat(item) {
   Alpine.store('converstationHistory').changeCurrentChat(item);
 
   
+  Alpine.nextTick(() => handleScroller());
   Alpine.nextTick(() => scrollingHanlder());
 }
 
