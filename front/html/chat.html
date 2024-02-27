@@ -68,7 +68,6 @@
     }
 
     .chat {
-      /* position: absolute; */
       height: 50%;
       max-height: 50%;
     }
@@ -84,28 +83,31 @@
   <div class="row g-0" style="height: 100%;">
     <div class="col-md-3 mb-4 mb-md-0 border boder-2">
       <div class="row d-flex justify-content-center">
-        <div class="input-group rounded mb-2 mt-3" x-data="searchInput"
-          x-init="$watch('search', value => setInputTimer())">
-          <button type="button" class="btn ms-3  px-0 py-0 my-0 " id="menu-button" onclick="openNav()">
-            <img src="assets/menu-icon.png" width="40" />
-          </button>
-          <div id="mySidenav" class="sidenav list-unstyled mb-0">
-            <div class="d-flex flex-row ms-3">
-              <div class="d-flex" style="position: relative;display:block;">
-                <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-8.webp" alt="avatar"
-                  class="rounded-circle  ms-3 shadow-1-strong " width="58">
-                <img src="assets/online-icon.png" class="align-self-end me-auto" width="15"
-                  style="position: absolute; margin-left:75%;">
+        <div class="input-group rounded mb-2 mt-3">
+          <div class="navBar" x-data="navBar" @navbar_esc.window="close()">
+            <button type="button" class="btn ms-3  px-0 py-0 my-0 " id="menu-button" :class="{'disabled': disable}"
+              @click="open()" :style="{'visibility': visible ? 'visible' : 'hidden'}">
+              <img src="assets/menu-icon.png" width="40" />
+            </button>
+            <div id="mySidenav" class="sidenav list-unstyled mb-0" :style="'width: ' + width + 'px'">
+              <div class="d-flex flex-row ms-3">
+                <div class="d-flex" style="position: relative;display:block;">
+                  <img src="https://mdbcdn.b-cdn.net/img/Photos/Avatars/avatar-8.webp" alt="avatar"
+                    class="rounded-circle  ms-3 shadow-1-strong " width="58">
+                  <img src="assets/online-icon.png" class="align-self-end me-auto" width="15"
+                    style="position: absolute; margin-left:75%;">
+                </div>
+                <div class="pt-1 ms-3">
+                  <p class="fw-bold mb-0">{{ user.nickname}}</p>
+                </div>
               </div>
-              <div class="pt-1 ms-3">
-                <p class="fw-bold mb-0">{{ user.nickname}}</p>
-              </div>
+              <a href="javascript:void(0)" class="closebtn" @click="close()">&times;</a>
+              <a href=" #" class="mt-4">Logout</a>
             </div>
-            <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
-            <a href="#" class="mt-4">Logout</a>
           </div>
-          <input type="search" class="form-control rounded-4 ms-3 me-4" x-model="search" placeholder="Search"
-            aria-label="Search" aria-describedby="search-addon" />
+          <input x-data="searchInput" x-init="$watch('search', value => setInputTimer())" type="search"
+            class="form-control rounded-4 ms-3 me-4" x-model="search" placeholder="Search" aria-label="Search"
+            aria-describedby="search-addon" />
         </div>
       </div>
       <div class="card">
@@ -114,7 +116,7 @@
           <div class="chatHistory" x-data>
 
             <ul class="list-unstyled mb-0 ">
-              <template x-for="[key, item] in Object.entries($store.converstationHistory.getConverstationHistory)" ,
+              <template x-for="[key, item] in Object.entries($store.chat.getConverstationHistory)" ,
                 :key="key">
                 <a role="button" style="color: black;text-decoration: none;" @click="changeCurrentChat(item)">
                   <li class="userChat p-2 border-bottom d-flex justify-content-between">
@@ -144,21 +146,17 @@
         </div>
       </div>
     </div>
-    <!-- align-seld-end -->
-    <!-- x-init="$watch($store.converstationHistory.currentChat.messages, value => $nextTick(() => {console.log('fdsfdsf')}))" -->
     <div class="col h-100 no-gutters" x-data>
 
-      <template x-if="$store.converstationHistory.currentChat" id="chat-template">
+      <template x-if="$store.chat.currentChat" id="chat-template">
 
         <div class="d-flex flex-column h-100 ">
           <ul class="chat-scroller list-unstyled d-flex flex-column ms-4 mt-4" @scroll="scrollingHanlder()"
             id="chat-scroller" style="height: 90%;overflow-y:scroll;">
             <div class="mt-auto">
-              <template x-for="[id, item] in Object.entries($store.converstationHistory.currentChat.messages)"
+              <template x-for="[id, item] in Object.entries($store.chat.currentChat.messages)"
                 :key="id">
                 <li class="chat-message d-flex mb-4">
-                  <!-- <img :src="item.profile_image" alt="avatar" class="rounded-circle d-flex align-self-start shadow-1-strong"
-                width="50"> -->
                   <template x-if="('is_date' in item)">
                     <div class="card" style="border-radius: 15px;background-color: #ced4da;left:15%;">
                       <div class="card-body mx-0 px-3 py-0 my-0 ">
@@ -171,8 +169,7 @@
                     </div>
                   </template>
                   <template x-if="!('is_date' in item)">
-                    <div class="card"
-                      :class="{'bg-message-sender' : $store.converstationHistory.isPeerIdCurrentUser(item)}"
+                    <div class="card" :class="{'bg-message-sender' : isPeerIdCurrentUser(item)}"
                       style="border-radius: 20px;">
                       <div class="card-body rounded-2 mx-0 px-2 py-2 my-0 ms-1">
                         <div class="d-flex">
@@ -184,19 +181,19 @@
 
                             </div>
                           </div>
-                          <template x-if="$store.converstationHistory.isPeerIdCurrentUser(item)">
+                          <template x-if="isPeerIdCurrentUser(item)">
                             <div class="mt-1">
-                            <template x-if="item.is_read">
-                              <div class="d-inline-block ms-2 mt-auto">
-                                <img src="assets/double-check-blue.png" class="mb-1" width="15" height="15">
-                              </div>
-                            </template>
-                            <template x-if="!item.is_read">
-                              <div class="d-inline-block ms-2 mt-auto">
-                                <img src="assets/check-black.png" class="mb-1" width="15" height="15">
-                              </div>
-                            </template>
-                          </div>
+                              <template x-if="item.is_read">
+                                <div class="d-inline-block ms-2 mt-auto">
+                                  <img src="assets/double-check-blue.png" class="mb-1" width="15" height="15">
+                                </div>
+                              </template>
+                              <template x-if="!item.is_read">
+                                <div class="d-inline-block ms-2 mt-auto">
+                                  <img src="assets/check-black.png" class="mb-1" width="15" height="15">
+                                </div>
+                              </template>
+                            </div>
                           </template>
                         </div>
                       </div>
@@ -205,28 +202,26 @@
       </template>
       </li>
       </template>
-      <!-- <div> -->
-      <!-- </div> -->
       </ul>
 
       <div>
         <template x-if="$store.scrollChatButton.visible">
 
-        <a type="button" class="rounded-circle" @click="handleScroller()" 
-          id="scroll-chat-btn-bottom" style="position: absolute;left:94%;bottom:15%; background-color:gainsboro;      animation-duration: 3s;">
-          <div class="d-flex container justify-content-center align-items-center rounded-circle"
-            style="position:relative;height: 50px;width: 50px;" @scroll-event.window="visible = $event.detail">
+          <a type="button" class="rounded-circle" @click="handleScroller()" id="scroll-chat-btn-bottom"
+            style="position: absolute;left:94%;bottom:15%; background-color:gainsboro;      animation-duration: 3s;">
+            <div class="d-flex container justify-content-center align-items-center rounded-circle"
+              style="position:relative;height: 50px;width: 50px;">
 
-            <img class="" src="assets/down-arrow-chat.png" width="25">
-            <template x-if="getChatUnreadMessagesCount() !== -1">
-              <div class="d-flex rounded-circle align-items-center justify-content-center"
-                style="color:white;background-color:rgb(88, 139, 175);width:30px;height:30px;margin-left:65%;margin-bottom:65%;position: absolute;">
-                <span x-text="getChatUnreadMessagesCount()"></span>
-              </div>
-            </template>
-          </div>
-        </a>
-      </template>
+              <img class="" src="assets/down-arrow-chat.png" width="25">
+              <template x-if="getChatUnreadMessagesCount() !== -1">
+                <div class="d-flex rounded-circle align-items-center justify-content-center"
+                  style="color:white;background-color:rgb(88, 139, 175);width:30px;height:30px;margin-left:65%;margin-bottom:65%;position: absolute;">
+                  <span x-text="getChatUnreadMessagesCount()"></span>
+                </div>
+              </template>
+            </div>
+          </a>
+        </template>
 
         <textarea class="form-control mb-1" id="chatTextArea" rows="3" @keyup.enter="handleSumbitButton"></textarea>
 
@@ -234,7 +229,7 @@
     </div>
     </template>
 
-    <template x-if="!$store.converstationHistory.currentChat" id="test_id">
+    <template x-if="!$store.chat.currentChat" id="test_id">
 
       <div class="d-flex flex-column min-vh-100 justify-content-center align-items-center">
 

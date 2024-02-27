@@ -6,16 +6,22 @@
 
 namespace Utils {
 
-  std::optional<oatpp::String> loadFile(const char* filename);
+    std::optional<oatpp::String> loadFile(const char* filename);
 
-  int getCurrentTimeInSeconds();
+    int getCurrentTimeInSeconds();
 
-  // return seconds
-  int getDateFromCurrent(int days);
+    // return seconds
+    int getDateFromCurrent(int days);
 
-  bool isDateExpired(int date);
+    bool isDateExpired(int date);
 
-  // TODO: Replace
-  std::string randomString(std::size_t length);
-}
+    std::string randomString(std::size_t length);
+
+    template <typename T, typename... Arguments>
+    void hash_combine(size_t& seed, const T& arg, const Arguments&... args)
+    {
+        seed ^= std::hash<T>{}(arg) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        (hash_combine(seed, args), ...);
+    }
+} // namespace Utils
 #endif // __UTILS_H__

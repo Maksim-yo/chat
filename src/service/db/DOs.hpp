@@ -1,14 +1,13 @@
 #ifndef __DOS_H__
 #define __DOS_H__
 
-
 #include "oatpp/core/Types.hpp"
 #include "oatpp/core/macro/codegen.hpp"
 
 #include OATPP_CODEGEN_BEGIN(DTO)
 
-
-class MessageDo : public oatpp::DTO {
+class MessageDo : public oatpp::DTO
+{
 
     DTO_INIT(MessageDo, DTO)
     DTO_FIELD(Int32, id);
@@ -17,32 +16,26 @@ class MessageDo : public oatpp::DTO {
     DTO_FIELD(Int32, user_id);
     DTO_FIELD(String, line_text);
     DTO_FIELD(Int32, created_at);
+    DTO_FIELD(UInt32, message_hash);
 };
 
-
-class ChatDo: public oatpp::DTO {
+class ChatDo : public oatpp::DTO
+{
 public:
-  DTO_INIT(ChatDo, DTO)
-  DTO_FIELD(Int32, id);
-  DTO_FIELD(Int32, user_first);
-  DTO_FIELD(Int32, user_second);
-
+    DTO_INIT(ChatDo, DTO)
+    DTO_FIELD(Int32, id);
+    DTO_FIELD(Int32, user_first);
+    DTO_FIELD(Int32, user_second);
 };
 
-class ChatExtendedDo: public oatpp::DTO{
-public: 
-  DTO_INIT(ChatExtendedDo, DTO)
-  DTO_FIELD(Int32, id);
-  DTO_FIELD(Int32, user_id);    
-  DTO_FIELD(String, nickname);
-
+class ChatExtendedDo : public oatpp::DTO
+{
+public:
+    DTO_INIT(ChatExtendedDo, DTO)
+    DTO_FIELD(Int32, id);
+    DTO_FIELD(Int32, user_id);
+    DTO_FIELD(String, nickname);
 };
-
-
-
-
-
-
 
 #include OATPP_CODEGEN_END(DTO)
 

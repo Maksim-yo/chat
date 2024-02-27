@@ -4,6 +4,6 @@
   "oatpp",
   "oatpp-websocket",
   "oatpp-postgresql",
-  "inja"  
+  "inja"
   ]
 }

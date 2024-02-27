@@ -19,6 +19,7 @@ add_definitions(
         -DFRONT_PATH="${CMAKE_CURRENT_LIST_DIR}/front/"
         -DDATABASE_MIGRATIONS="${CMAKE_CURRENT_LIST_DIR}/src/migrations"
         -DCONFIG_PATH="${CMAKE_CURRENT_LIST_DIR}/config/config.json"
+        -DSTATIC_PATH="${CMAKE_CURRENT_LIST_DIR}/front/static/"
 )
 
 
@@ -26,12 +27,12 @@ add_executable(${project_name}-exe
                 src/App.cpp
                 src/AppComponent.hpp    
                 src/controller/AuthController.hpp
-                src/service/Peer.hpp
-                src/service/Peer.cpp
-                src/service/ConnectionHandler.cpp
-                src/service/ConnectionHandler.hpp
-                src/service/Room.cpp
-                src/service/Room.hpp
+                src/service/chat/Peer.hpp
+                src/service/chat/Peer.cpp
+                src/service/chat/Lobby.cpp
+                src/service/chat/Lobby.hpp
+                src/service/chat/Room.cpp
+                src/service/chat/Room.hpp
                 src/dto/DTOs.hpp
                 src/dto/ConfigDto.hpp
                 src/service/db/Database.hpp
@@ -43,10 +44,24 @@ add_executable(${project_name}-exe
                 src/service/auth/UserObject.hpp
                 src/utils/utils.hpp
                 src/utils/utils.cpp
-                src/service/dao/ChatDao.hpp
-                src/service/dao/ChatDao.cpp
                 src/service/interceptors/LoggerInterceptor.hpp
-                )
+                src/service/db/DOs.hpp
+                src/controller/StaticFilesManager.hpp
+                src/controller/StaticFilesManager.cpp
+                src/controller/StaticController.hpp
+                src/service/dao/interfaces/IChatDao.hpp 
+                src/service/dao/interfaces/ITokenDao.hpp 
+                src/service/dao/interfaces/IUserDao.hpp
+                src/service/dao/impl/postgres/ChatDao.cpp 
+                src/service/dao/impl/postgres/ChatDao.hpp 
+                src/service/dao/impl/postgres/TokenDao.cpp 
+                src/service/dao/impl/postgres/TokenDao.hpp 
+                src/service/dao/impl/postgres/UserDao.cpp 
+                src/service/dao/impl/postgres/UserDao.hpp
+                )       
+
+target_include_directories(${project_name}-exe PUBLIC src/service/dao)
+
 
 target_link_libraries(${project_name}-exe
         PUBLIC oatpp::oatpp 

@@ -4,40 +4,44 @@
 #include "oatpp/core/macro/codegen.hpp"
 
 #include "AppComponent.hpp"
-#include "controller/AuthController.hpp"
 #include "DatabaseComponent.hpp"
+#include "controller/AuthController.hpp"
+#include "controller/StaticController.hpp"
+
 #include OATPP_CODEGEN_BEGIN(DTO)
 
+void run()
+{
 
-void run() {
+    DatabaseComponent databaseComponent;
+    AppComponent components;
 
-  DatabaseComponent databaseComponent;
-  AppComponent components;
+    OATPP_COMPONENT(std::shared_ptr<oatpp::web::server::HttpRouter>, router);
 
-  OATPP_COMPONENT(std::shared_ptr<oatpp::web::server::HttpRouter>, router);
+    auto authController = std::make_shared<AuthController>();
+    auto staticController = std::make_shared<StaticController>();
+    router->addController(authController);
+    router->addController(staticController);
 
-  auto authController = std::make_shared<AuthController>(); 
-  router->addController(authController);
+    OATPP_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>, connectionHandler, "http");
 
-  OATPP_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>, connectionHandler, "http");
+    OATPP_COMPONENT(std::shared_ptr<oatpp::network::ServerConnectionProvider>, connectionProvider);
 
-  OATPP_COMPONENT(std::shared_ptr<oatpp::network::ServerConnectionProvider>, connectionProvider);
+    oatpp::network::Server server(connectionProvider, connectionHandler);
 
-  oatpp::network::Server server(connectionProvider, connectionHandler);
+    OATPP_LOGI("MyApp", "Server running on port %s", connectionProvider->getProperty("port").getData());
 
-  OATPP_LOGI("MyApp", "Server running on port %s", connectionProvider->getProperty("port").getData());
-
-  server.run();
+    server.run();
 }
 
-int main() {
+int main()
+{
 
-  oatpp::base::Environment::init();
+    oatpp::base::Environment::init();
 
-  run();
+    run();
 
-  oatpp::base::Environment::destroy();
+    oatpp::base::Environment::destroy();
 
-  return 0;
-
+    return 0;
 }

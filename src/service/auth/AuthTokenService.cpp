@@ -4,20 +4,19 @@
 
 const std::string AuthTokenService::TOKEN = "Auth_token";
 
-AuthTokenService::AuthTokenService() 
+AuthTokenService::AuthTokenService()
 {
-
 }
 
 oatpp::Object<UserToken> AuthTokenService::createToken(oatpp::Object<UserDto> user)
 {
- 
+
     oatpp::Object<UserToken> token = UserToken::createShared();
-    token->token =  Utils::randomString(32);
+    token->token = Utils::randomString(32);
     token->id = user->id;
     token->expiry = Utils::getDateFromCurrent(7);
 
-    auto dbToken = m_chatDao->createUserToken(token);
+    auto dbToken = m_postgresTokenDao->createUserToken(token);
     OATPP_LOGD("AuthTokenService", "Token %s created success", dbToken->token.getValue("None"));
     clearExpiredTokens();
 
@@ -30,25 +29,22 @@ void AuthTokenService::onUserAuthenticated(oatpp::Object<UserDto> user)
     // if (!res->isSuccess())
     //     return;
     // auto dbResult = res->fetch<oatpp::Vector<oatpp::Object><UserToken>>();
-
 }
 
-std::optional<oatpp::Object<UserDto>> AuthTokenService::proccessToken(oatpp::String tokenValue)
+std::optional<oatpp::Int32> AuthTokenService::proccessToken(oatpp::String tokenValue)
 {
-    auto token = m_chatDao->findToken(tokenValue);
+    auto token = m_postgresTokenDao->findToken(tokenValue);
     if (!token.has_value())
         return std::nullopt;
-    if (Utils::isDateExpired(token.value()->expiry)){
-        m_chatDao->deleteTokenByValue(tokenValue);
+    if (Utils::isDateExpired(token.value()->expiry)) {
+        m_postgresTokenDao->deleteTokenByValue(tokenValue);
         OATPP_LOGD("AuthTokenService", "Token %s expired", tokenValue);
         return std::nullopt;
     }
-    return m_chatDao->getUserById(token.value()->id);
-
+    return token.value()->id;
 }
-    
 
 void AuthTokenService::clearExpiredTokens()
 {
-    m_chatDao->deleteExpiredTokens();
+    m_postgresTokenDao->deleteExpiredTokens();
 }

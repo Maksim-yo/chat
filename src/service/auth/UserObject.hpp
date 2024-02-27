@@ -5,13 +5,15 @@
 
 #include "dto/UserDto.hpp"
 
-class UserObject: public oatpp::web::server::handler::AuthorizationObject {
+class UserObject : public oatpp::web::server::handler::AuthorizationObject
+{
 public:
     oatpp::Object<UserDto> user;
-    
+
     UserObject(oatpp::Object<UserDto> user) : user(user) {}
 
-    inline oatpp::Object<UserDto> getUser() {
+    inline oatpp::Object<UserDto> getUser()
+    {
         return user;
     }
 };

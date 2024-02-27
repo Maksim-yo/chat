@@ -1,29 +1,22 @@
-#include "oatpp/web/protocol/http/outgoing/StreamingBody.hpp"
+#ifndef __AUTHCONTROLLER_H__
+#define __AUTHCONTROLLER_H__
 
+#include "oatpp/web/protocol/http/outgoing/StreamingBody.hpp"
 #include "oatpp/web/server/api/ApiController.hpp"
 #include "oatpp/core/utils/ConversionUtils.hpp"
-
 #include "oatpp/web/server/handler/AuthorizationHandler.hpp"
 #include "oatpp/parser/json/mapping/ObjectMapper.hpp"
-#include "oatpp/core/utils/ConversionUtils.hpp"
-
 #include "oatpp-websocket/Handshaker.hpp"
-
 #include "oatpp/core/macro/codegen.hpp"
 #include "oatpp/core/macro/component.hpp"
-
 #include "oatpp/network/Url.hpp"
 
 #include <inja/inja.hpp>
 
-#include "oatpp/core/utils/ConversionUtils.hpp"
-
-
-
 #include "dto/UserDto.hpp"
 #include "service/auth/AuthServiceBase.hpp"
 #include "service/auth/AuthTokenService.hpp"
-#include "service/dao/ChatDAO.hpp"
+
 using namespace oatpp::web::server::handler;
 namespace http = oatpp::web::protocol::http;
 
@@ -53,7 +46,6 @@ private:
   OATPP_COMPONENT(std::shared_ptr<oatpp::network::ConnectionHandler>, websocketConnectionHandler, "websocket");
   OATPP_COMPONENT(std::shared_ptr<AuthServiceBase>, m_authServiceBase);
   OATPP_COMPONENT(oatpp::Object<ConfigDto>, config);
-  OATPP_COMPONENT(std::shared_ptr<ChatDao>, m_chatDao);
 private:
 
 //TODO: refactor
@@ -196,54 +188,9 @@ public:
       response->setConnectionUpgradeParameters(parameters);
       return _return(response);
 
-     }  
+       }  
    };
 
-  /*
-    api: GetUserHistory
-
-    history: 
-  */
-    ENDPOINT_ASYNC("GET", "getUserChatHisory/{chat_id}", getUserHisory) {
-
-    ENDPOINT_ASYNC_INIT(getUserHisory)
-
-      Action act() override {
-
-        auto chatId = request->getPathVariable("chat_id");
-        bool success;
-        auto history = controller->m_chatDao->getUsersHistoryInChat(oatpp::utils::conversion::strToInt32(chatId, success));
-        auto res = controller->m_defaultObjectMapper->writeToString(history.value());
-        auto response = controller->createResponse(Status::CODE_200, res);
-        response->putHeader(Header::CONTENT_TYPE, "application/json");
-        return _return(response);
-
-      }  
-    };
-
-    
-
-
-  /*
-    
-    profile_url: 
-    name: 
-    last_message:
-
-  */
-  //   ENDPOINT_ASYNC("GET", "getUserChats", getUserChats) {
-
-  //   ENDPOINT_ASYNC_INIT(getUserChats)
-
-  //    Action act() override {
-      
-  //     AUTH_INIT()
-
-  //     m_chatDao->get
-  //     return _return(response);
-
-  //    }  
-  //  };
 
     ENDPOINT_ASYNC("GET", "/", TestPage){ 
 
@@ -268,7 +215,7 @@ public:
     }
   };
 
-     ENDPOINT_ASYNC("GET", "chat.js", temp){ 
+    ENDPOINT_ASYNC("GET", "chat.js", temp){ 
 
     ENDPOINT_ASYNC_INIT(temp)
 
@@ -294,3 +241,5 @@ public:
 
 
 #include OATPP_CODEGEN_END(ApiController)
+
+#endif // __AUTHCONTROLLER_H__

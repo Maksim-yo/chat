@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS chat_line (
   line_text TEXT NOT NULL ,
   created_at INT NOT NULL ,
   is_read BOOLEAN NOT NULL DEFAULT FALSE ,
+  message_hash INT NOT NULL ,
   CONSTRAINT fk_chat_line_chat
     FOREIGN KEY (chat_id )
     REFERENCES chat (id )
