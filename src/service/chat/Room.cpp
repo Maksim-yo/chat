@@ -48,6 +48,9 @@ void Room::markMessagesAsRead(int count)
 void Room::addHistoryMessage(const oatpp::Object<MessageDto>& message)
 {
     std::lock_guard<std::mutex> lock(m_historyLock);
+    m_currentMessagesCount++;
+    if (m_newMessagesdIndex == -1)
+        m_newMessagesdIndex = m_messageHistory->size() - 1;
     size_t messageHash;
     Utils::hash_combine(messageHash, message->peerId, message->timestamp);
     // Depends on system
@@ -57,9 +60,9 @@ void Room::addHistoryMessage(const oatpp::Object<MessageDto>& message)
 
 oatpp::Object<ChatDto> Room::getChatDto()
 {
+    std::lock_guard<std::mutex> lock(m_historyLock);
     auto chat = ChatDto::createShared();
-    oatpp::Vector<oatpp::Object<MessageDto>> newChatHistory = m_messageHistory;
-    for (auto itChatHistory = newChatHistory->begin(); itChatHistory != newChatHistory->end(); itChatHistory++) {
+    for (auto itChatHistory = m_messageHistory->begin(); itChatHistory != m_messageHistory->end(); itChatHistory++) {
         for (auto itChangedMessages = m_changedMessages->begin(); itChangedMessages != m_changedMessages->end(); itChangedMessages++) {
             if ((*itChangedMessages)->messageHash == (*itChatHistory)->messageHash)
                 (*itChatHistory) = (*itChangedMessages);
@@ -69,4 +72,19 @@ oatpp::Object<ChatDto> Room::getChatDto()
     chat->peers = m_users;
     chat->id = m_id;
     return chat;
+}
+
+void Room::saveData()
+{
+    std::lock_guard<std::mutex> lock(m_historyLock);
+    while (m_newMessagesdIndex != m_messageHistory->size()) {
+
+        for (auto itNewMessage = m_changedMessages->begin(); itNewMessage != m_changedMessages->end(); itNewMessage++) {
+
+            if (m_messageHistory[m_newMessagesdIndex]->messageHash == (*itNewMessage)->messageHash)
+                m_messageHistory[m_newMessagesdIndex] = (*itNewMessage);
+        }
+        m_postgresChatDao->appendMessage(m_messageHistory[m_newMessagesdIndex]);
+        m_newMessagesdIndex++;
+    }
 }
