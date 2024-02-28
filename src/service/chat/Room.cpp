@@ -4,10 +4,16 @@
 #include "Room.hpp"
 #include "utils/utils.hpp"
 
-Room::Room(oatpp::Object<ChatDto> chatDto, Lobby* lobby) : m_id(chatDto->id), lobby(lobby), m_messageHistory(chatDto->history), m_users({}), m_changedMessages({})
+Room::Room(oatpp::Object<ChatDto> chatDto) : m_id(chatDto->id), m_messageHistory(chatDto->history), m_users({}), m_changedMessages({})
 {
     if (chatDto->peers->size() != 0)
         std::for_each(chatDto->peers->begin(), chatDto->peers->end(), [this](oatpp::Object<PeerDto> peer) { m_users->emplace_back(peer); });
+    m_newMessagesdIndex = m_messageHistory->size();
+}
+
+Room::~Room()
+{
+    saveData();
 }
 
 oatpp::Int32 Room::getId()
@@ -17,14 +23,9 @@ oatpp::Int32 Room::getId()
 
 void Room::sendMessageAsync(const oatpp::String& message)
 {
-    lobby->peersLock();
-    for (auto it = m_users->begin(); it != m_users->end(); it++) {
-        auto peers = lobby->getPeers();
-        auto peer = peers.find((*it)->peerId);
-        if (peer != peers.end())
-            peer->second->sendMessageAsync(message);
+    for (auto itPeer = m_peers.begin(); itPeer != m_peers.end(); itPeer++) {
+        (*itPeer)->sendMessageAsync(message);
     }
-    lobby->peersUnlock();
 }
 
 void Room::markMessagesAsRead(int count)
@@ -48,14 +49,14 @@ void Room::markMessagesAsRead(int count)
 void Room::addHistoryMessage(const oatpp::Object<MessageDto>& message)
 {
     std::lock_guard<std::mutex> lock(m_historyLock);
-    m_currentMessagesCount++;
-    if (m_newMessagesdIndex == -1)
-        m_newMessagesdIndex = m_messageHistory->size() - 1;
+    m_currentMessagesCount += 1;
     size_t messageHash;
     Utils::hash_combine(messageHash, message->peerId, message->timestamp);
     // Depends on system
     message->messageHash = messageHash;
     m_messageHistory->push_back(message);
+    if (m_currentMessagesCount == maxMessagesForSave)
+        saveData();
 }
 
 oatpp::Object<ChatDto> Room::getChatDto()
@@ -74,10 +75,24 @@ oatpp::Object<ChatDto> Room::getChatDto()
     return chat;
 }
 
+void Room::peerJoin(Peer* peer)
+{
+    m_peersLock.lock();
+    m_peers.push_back(peer);
+    m_peersLock.unlock();
+}
+
+void Room::peerLeft(Peer* peer)
+{
+    m_peersLock.lock();
+    m_peers.erase(std::remove_if(m_peers.begin(), m_peers.end(), [&peer](Peer* p) { return p == peer; }), m_peers.end());
+    m_peersLock.unlock();
+}
+
 void Room::saveData()
 {
     std::lock_guard<std::mutex> lock(m_historyLock);
-    while (m_newMessagesdIndex != m_messageHistory->size()) {
+    while (m_newMessagesdIndex < m_messageHistory->size()) {
 
         for (auto itNewMessage = m_changedMessages->begin(); itNewMessage != m_changedMessages->end(); itNewMessage++) {
 
@@ -87,4 +102,5 @@ void Room::saveData()
         m_postgresChatDao->appendMessage(m_messageHistory[m_newMessagesdIndex]);
         m_newMessagesdIndex++;
     }
+    m_currentMessagesCount = 0;
 }

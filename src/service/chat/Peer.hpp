@@ -13,8 +13,7 @@
 #include "service/dao/impl/postgres/ChatDao.hpp"
 #include "service/dao/impl/postgres/UserDao.hpp"
 
-#include "Lobby.hpp"
-#include "Room.hpp"
+#include "RoomManager.hpp"
 #include "dto/DTOs.hpp"
 #include "dto/Messages.hpp"
 
@@ -23,38 +22,35 @@
 
 class Peer : public oatpp::websocket::AsyncWebSocket::Listener
 {
-protected:
+private:
+    oatpp::Int32 m_peerId;
+    oatpp::String m_nickname;
+    std::shared_ptr<RoomManager> m_roomManager;
+    std::vector<Room*> m_rooms;
+    std::mutex m_roomsLock;
 
     oatpp::data::stream::BufferOutputStream m_messageBuffer;
     std::shared_ptr<oatpp::websocket::AsyncWebSocket> m_socket;
 
-    oatpp::String m_nickname;
-    oatpp::Int32 m_peerId;
-    Lobby* lobby;
-
-    std::atomic<v_int32> m_pingCounter;
-
-    std::mutex m_test;
-    // socket sync
+    uint16_t m_pingCounter{0};
+    std::mutex m_pingLock;
     oatpp::async::Lock m_writeLock;
-
     oatpp::async::CoroutineWaitList m_pingWaitList;
-
     oatpp::async::CoroutineWaitList m_pongWaitList;
+
+private:
     OATPP_COMPONENT(std::shared_ptr<oatpp::async::Executor>, m_asyncExecutor);
     OATPP_COMPONENT(std::shared_ptr<oatpp::data::mapping::ObjectMapper>, m_objectMapper);
     OATPP_COMPONENT(std::shared_ptr<Postgres::ChatDao>, m_postgresChatDao);
     OATPP_COMPONENT(std::shared_ptr<Postgres::UserDao>, m_postgresUserDao);
 
 public:
-    Peer(std::shared_ptr<AsyncWebSocket> socket, oatpp::Int32 peerId, oatpp::String nickname, Lobby* lobby);
+    Peer(std::shared_ptr<AsyncWebSocket> socket, oatpp::Int32 peerId, oatpp::String nickname, std::shared_ptr<RoomManager> roomManager);
 
     void sendMessageAsync(const oatpp::String& message);
-    void sendPingAsyncWait();
-    void sendPingAsync();
+    bool sendPingAsync();
 
-    std::shared_ptr<Room> getRoom(oatpp::Int32 roomId);
-    void addRoom(const std::shared_ptr<Room>& room);
+    Room* getOrCreateRoom(oatpp::Int32 roomId);
 
     oatpp::async::CoroutineStarter handleMessage(oatpp::String messageData, const oatpp::Object<BaseMessage>& message);
     oatpp::Int32 getPeerId() const;
@@ -64,7 +60,7 @@ public:
     CoroutineStarter onPong(const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& socket, const oatpp::String& message) override;
     CoroutineStarter onPing(const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& socket, const oatpp::String& message) override;
 
-    ~Peer() {}
+    ~Peer();
 };
 
 #endif

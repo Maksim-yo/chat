@@ -142,6 +142,11 @@ socket.onclose = function (event) {
     console.log('Socket closed')
 }
 
+socket.onopen = function (event) {
+    msg = { code: CODE_INFO }
+    socketSendNextData(JSON.stringify(msg))
+}
+
 socket.onmessage = function (event) {
     onMessage(JSON.parse(event.data))
 }

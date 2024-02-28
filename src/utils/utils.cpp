@@ -21,6 +21,11 @@ namespace Utils {
         auto cur_time = std::chrono::system_clock::now().time_since_epoch();
         return std::chrono::duration_cast<std::chrono::seconds>(cur_time).count();
     }
+
+    int getCurrentTimeInMiliseconds(){
+        auto cur_time = std::chrono::system_clock::now().time_since_epoch();
+        return std::chrono::duration_cast<std::chrono::milliseconds>(cur_time).count();
+    }
     // return seconds
     int getDateFromCurrent(int days)
     {

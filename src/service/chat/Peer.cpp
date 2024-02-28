@@ -1,30 +1,21 @@
-#include "Peer.hpp"
-#include "utils/utils.hpp"
 #include <chrono>
 
+#include "Peer.hpp"
+#include "RoomManager.hpp"
 using namespace std::chrono;
 
-Peer::Peer(std::shared_ptr<AsyncWebSocket> socket, oatpp::Int32 peerId, oatpp::String nickname, Lobby* lobby)
-    : m_socket(socket), m_peerId(peerId), m_nickname(nickname), lobby(lobby)
+Peer::Peer(std::shared_ptr<AsyncWebSocket> socket, oatpp::Int32 peerId, oatpp::String nickname, std::shared_ptr<RoomManager> roomManager)
+    : m_socket(socket), m_peerId(peerId), m_nickname(nickname), m_roomManager(std::move(roomManager))
 {
-    auto message = InitialMessage::createShared();
-    auto converstationsHistory = m_postgresChatDao->getUserConverstationsHisotry(m_peerId);
-    message->peerId = m_peerId;
-    message->peerNickname = m_nickname;
-    message->code = MessageCodes::CODE_INFO;
-    message->chats = {};
-    if (converstationsHistory.has_value()) {
-        message->chats = converstationsHistory.value();
-        for (auto it = converstationsHistory.value()->begin(); it != converstationsHistory.value()->end(); it++) {
-            auto room = lobby->getRoom((*it)->id);
-            if (room == nullptr)
-                addRoom(std::make_shared<Room>(*it, lobby));
-            else {
-                *it = room->getChatDto();
-            }
-        }
+}
+
+Peer::~Peer()
+{
+    // TODO: Refactor, not safe, add timer
+    std::lock_guard lck(m_roomsLock);
+    for (auto itRoom = m_rooms.begin(); itRoom != m_rooms.end(); itRoom++) {
+        (*itRoom)->peerLeft(this);
     }
-    sendMessageAsync(MSG(message));
 }
 
 void Peer::sendMessageAsync(const oatpp::String& message)
@@ -52,7 +43,7 @@ void Peer::sendMessageAsync(const oatpp::String& message)
     m_asyncExecutor->execute<SendMessageCoroutine>(&m_writeLock, m_socket, message);
 }
 
-void Peer::sendPingAsync()
+bool Peer::sendPingAsync()
 {
     class WaitCoroutine : public oatpp::async::Coroutine<WaitCoroutine>
     {
@@ -69,7 +60,7 @@ void Peer::sendPingAsync()
         Action act() override
         {
 
-            std::lock_guard<std::mutex> lock(m_peer->m_test);
+            std::lock_guard<std::mutex> lock(m_peer->m_pingLock);
 
             if (m_peer->m_pingCounter == 0) {
 
@@ -78,7 +69,7 @@ void Peer::sendPingAsync()
             }
             if (m_wait) {
                 const std::chrono::time_point<std::chrono::steady_clock> start =
-                    std::chrono::steady_clock::now() + 10s;
+                    std::chrono::steady_clock::now() + 5s;
                 m_wait = false;
                 return Action::createWaitListActionWithTimeout(&m_peer->m_pongWaitList, start);
             }
@@ -101,7 +92,7 @@ void Peer::sendPingAsync()
 
         Action act() override
         {
-            std::lock_guard<std::mutex> lock(m_peer->m_test);
+            std::lock_guard<std::mutex> lock(m_peer->m_pingLock);
 
             if (m_peer->m_pingCounter == 0) {
                 OATPP_LOGI("MyApp", "PING");
@@ -111,65 +102,68 @@ void Peer::sendPingAsync()
             return Action::createWaitListAction(&m_peer->m_pingWaitList);
         }
     };
-
+    // TODO: Refactor
+    if (m_pingCounter == 0)
+        return true;
     m_asyncExecutor->execute<SendPingCoroutine>(&m_writeLock, m_socket, this);
+    return false;
 }
 
-void Peer::sendPingAsyncWait()
+Room* Peer::getOrCreateRoom(oatpp::Int32 roomId)
 {
-
-    sendPingAsync();
-}
-
-std::shared_ptr<Room> Peer::getRoom(oatpp::Int32 roomId)
-{
-    auto room = lobby->getRoom(roomId);
+    std::lock_guard<std::mutex> lck(m_roomsLock);
+    Room* room = nullptr;
+    for (auto itRoom = m_rooms.begin(); itRoom != m_rooms.end(); itRoom++) {
+        if ((*itRoom)->getId() == roomId)
+            room = *itRoom;
+    }
+    if (room)
+        return room;
+    room = m_roomManager->getOrCreateRoom(roomId);
+    m_rooms.push_back(room);
     return room;
-}
-
-void Peer::addRoom(const std::shared_ptr<Room>& room)
-{
-    lobby->addRoom(room);
 }
 
 oatpp::async::CoroutineStarter Peer::handleMessage(oatpp::String messageData, const oatpp::Object<BaseMessage>& message)
 {
-
     switch (*message->code) {
+    case MessageCodes::CODE_INFO: {
+        auto message = InitialMessage::createShared();
+        message->peerId = m_peerId;
+        message->peerNickname = m_nickname;
+        message->code = MessageCodes::CODE_INFO;
+        message->chats = {};
+
+        std::vector<Room*> _rooms = m_roomManager->getOrCreateRooms(this);
+        for (auto itRoom = _rooms.begin(); itRoom != _rooms.end(); itRoom++) {
+            message->chats->push_back((*itRoom)->getChatDto());
+            m_roomsLock.lock();
+            m_rooms.push_back(*itRoom);
+            m_roomsLock.unlock();
+        } 
+        sendMessageAsync(MSG(message));
+        break;
+    } 
     case MessageCodes::CODE_PEER_IS_TYPING: {
         auto newMessage = m_objectMapper->readFromString<oatpp::Object<ChatMessage>>(messageData);
-        std::shared_ptr<Room> room = getRoom(newMessage->message->chat_id);
-        if (!room)
-            return nullptr;
+        Room* room = getOrCreateRoom(newMessage->message->chat_id);
         room->sendMessageAsync(MSG(newMessage));
         break;
     }
     case MessageCodes::CODE_PEER_MESSAGE: {
         auto newMessage = m_objectMapper->readFromString<oatpp::Object<ChatMessage>>(messageData);
-        std::shared_ptr<Room> room = getRoom(newMessage->message->chat_id);
-        if (!room) {
-            throw std::runtime_error("Room doesn't exist");
-        }
+        Room* room = getOrCreateRoom(newMessage->message->chat_id);
         room->addHistoryMessage(newMessage->message);
         room->sendMessageAsync(MSG(newMessage));
         break;
     }
-    case MessageCodes::CODE_PEER_JOINED:
-        break;
     case MessageCodes::CODE_PEER_READ: {
         auto newMessage = m_objectMapper->readFromString<oatpp::Object<ReadMessage>>(messageData);
-        std::shared_ptr<Room> room = getRoom(newMessage->chat_id);
-        if (!room) {
-            throw std::runtime_error("Room doesn't exist");
-        }
+        Room* room = getOrCreateRoom(newMessage->chat_id);
         room->markMessagesAsRead(newMessage->count);
         room->sendMessageAsync(MSG(newMessage));
         break;
     }
-    case MessageCodes::CODE_PEER_LEFT:
-        break;
-    case MessageCodes::CODE_PEER_MESSAGE_FILE:
-        break;
     case MessageCodes::CODE_FIND_ROOMS: {
         auto newMessage = m_objectMapper->readFromString<oatpp::Object<FindMessage>>(messageData);
         auto query = newMessage->query;
@@ -182,6 +176,7 @@ oatpp::async::CoroutineStarter Peer::handleMessage(oatpp::String messageData, co
         resultMessage->peerNickname = m_nickname;
         resultMessage->code = MessageCodes::CODE_FIND_ROOMS;
         sendMessageAsync(MSG(resultMessage));
+        break;
     }
     }
 
@@ -217,14 +212,13 @@ oatpp::async::CoroutineStarter Peer::readMessage(const std::shared_ptr<oatpp::we
 
 oatpp::async::CoroutineStarter Peer::onClose(const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& socket, v_uint16 code, const oatpp::String& message)
 {
-
     return nullptr;
 }
 oatpp::async::CoroutineStarter Peer::onPong(const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& socket, const oatpp::String& message)
 {
-    std::lock_guard<std::mutex> lock(m_test);
+    std::lock_guard<std::mutex> lock(m_pingLock);
 
-    --m_pingCounter;
+    m_pingCounter--;
 
     OATPP_LOGI("MyApp", "PONG");
     m_pongWaitList.notifyFirst();

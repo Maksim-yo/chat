@@ -33,6 +33,8 @@ add_executable(${project_name}-exe
                 src/service/chat/Lobby.hpp
                 src/service/chat/Room.cpp
                 src/service/chat/Room.hpp
+                src/service/chat/RoomManager.cpp
+                src/service/chat/RoomManager.hpp
                 src/dto/DTOs.hpp
                 src/dto/ConfigDto.hpp
                 src/service/db/Database.hpp
