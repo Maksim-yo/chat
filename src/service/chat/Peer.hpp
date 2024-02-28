@@ -24,27 +24,7 @@
 class Peer : public oatpp::websocket::AsyncWebSocket::Listener
 {
 protected:
-    class WaitListListener : public oatpp::async::CoroutineWaitList::Listener
-    {
-    private:
-        Peer* m_subscriber;
 
-    public:
-        WaitListListener(Peer* subscriber)
-            : m_subscriber(subscriber)
-        {
-        }
-
-        void onNewItem(oatpp::async::CoroutineWaitList& list) override
-        {
-            std::lock_guard<std::mutex> lock(m_subscriber->m_test);
-
-            const int temp = 0;
-            if (m_subscriber->m_pingCounter == temp)
-                OATPP_LOGI("MyApp", "WAIT NOTYIFY ALL");
-            list.notifyAll();
-        }
-    };
     oatpp::data::stream::BufferOutputStream m_messageBuffer;
     std::shared_ptr<oatpp::websocket::AsyncWebSocket> m_socket;
 
@@ -58,9 +38,9 @@ protected:
     // socket sync
     oatpp::async::Lock m_writeLock;
 
-    oatpp::async::CoroutineWaitList m_waitList;
-    WaitListListener m_waitListener;
+    oatpp::async::CoroutineWaitList m_pingWaitList;
 
+    oatpp::async::CoroutineWaitList m_pongWaitList;
     OATPP_COMPONENT(std::shared_ptr<oatpp::async::Executor>, m_asyncExecutor);
     OATPP_COMPONENT(std::shared_ptr<oatpp::data::mapping::ObjectMapper>, m_objectMapper);
     OATPP_COMPONENT(std::shared_ptr<Postgres::ChatDao>, m_postgresChatDao);

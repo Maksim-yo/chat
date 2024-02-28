@@ -1,9 +1,12 @@
 #include "Peer.hpp"
+#include "utils/utils.hpp"
+#include <chrono>
+
+using namespace std::chrono;
 
 Peer::Peer(std::shared_ptr<AsyncWebSocket> socket, oatpp::Int32 peerId, oatpp::String nickname, Lobby* lobby)
-    : m_socket(socket), m_peerId(peerId), m_nickname(nickname), m_waitListener(this), lobby(lobby)
+    : m_socket(socket), m_peerId(peerId), m_nickname(nickname), lobby(lobby)
 {
-    m_waitList.setListener(&m_waitListener);
     auto message = InitialMessage::createShared();
     auto converstationsHistory = m_postgresChatDao->getUserConverstationsHisotry(m_peerId);
     message->peerId = m_peerId;
@@ -51,33 +54,48 @@ void Peer::sendMessageAsync(const oatpp::String& message)
 
 void Peer::sendPingAsync()
 {
-
-    class SendPingCoroutine : public oatpp::async::Coroutine<SendPingCoroutine>
+    class WaitCoroutine : public oatpp::async::Coroutine<WaitCoroutine>
     {
     private:
-        oatpp::async::Lock* m_lock;
-        std::shared_ptr<oatpp::websocket::AsyncWebSocket> m_websocket;
+        Peer* m_peer;
+        bool m_wait;
 
     public:
-        SendPingCoroutine(oatpp::async::Lock* lock, const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& websocket)
-            : m_lock(lock), m_websocket(websocket)
+        WaitCoroutine(Peer* peer)
+            : m_peer(peer), m_wait(true)
         {
         }
 
         Action act() override
         {
-            return oatpp::async::synchronize(m_lock, m_websocket->sendPingAsync(nullptr)).next(finish());
+
+            std::lock_guard<std::mutex> lock(m_peer->m_test);
+
+            if (m_peer->m_pingCounter == 0) {
+
+                m_peer->m_pingWaitList.notifyFirst();
+                return finish();
+            }
+            if (m_wait) {
+                const std::chrono::time_point<std::chrono::steady_clock> start =
+                    std::chrono::steady_clock::now() + 10s;
+                m_wait = false;
+                return Action::createWaitListActionWithTimeout(&m_peer->m_pongWaitList, start);
+            }
+            OATPP_LOGI("MyApp", "Request timeout exceeded.");
+            return finish();
         }
     };
-
-    class WaitCoroutine : public oatpp::async::Coroutine<WaitCoroutine>
+    class SendPingCoroutine : public oatpp::async::Coroutine<SendPingCoroutine>
     {
     private:
+        oatpp::async::Lock* m_lock;
+        std::shared_ptr<oatpp::websocket::AsyncWebSocket> m_websocket;
         Peer* m_peer;
 
     public:
-        WaitCoroutine(Peer* peer)
-            : m_peer(peer)
+        SendPingCoroutine(oatpp::async::Lock* lock, const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& websocket, Peer* peer)
+            : m_lock(lock), m_websocket(websocket), m_peer(peer)
         {
         }
 
@@ -85,27 +103,16 @@ void Peer::sendPingAsync()
         {
             std::lock_guard<std::mutex> lock(m_peer->m_test);
 
-            OATPP_LOGI("MyApp", "WAIT COROUTINE CALLED");
-            const int temp = 0;
-            if (m_peer->m_pingCounter == temp) {
-
-                OATPP_LOGI("MyApp", "WAIT COROUTINE ENDED");
-                return finish();
+            if (m_peer->m_pingCounter == 0) {
+                OATPP_LOGI("MyApp", "PING");
+                m_peer->m_pingCounter++;
+                return oatpp::async::synchronize(m_lock, m_websocket->sendPingAsync(nullptr)).next(WaitCoroutine::start(m_peer)).next(finish());
             }
-            return Action::createWaitListAction(&m_peer->m_waitList);
+            return Action::createWaitListAction(&m_peer->m_pingWaitList);
         }
     };
 
-    ++m_pingCounter;
-    // int value = m_pingCounter.load(std::memory_order_relaxed);
-
-    OATPP_LOGI("MyApp", "PING");
-
-    // if(m_socket && m_pingCounter == 1) {
-    m_asyncExecutor->execute<SendPingCoroutine>(&m_writeLock, m_socket);
-    // }
-
-    m_asyncExecutor->execute<WaitCoroutine>(this);
+    m_asyncExecutor->execute<SendPingCoroutine>(&m_writeLock, m_socket, this);
 }
 
 void Peer::sendPingAsyncWait()
@@ -220,6 +227,7 @@ oatpp::async::CoroutineStarter Peer::onPong(const std::shared_ptr<oatpp::websock
     --m_pingCounter;
 
     OATPP_LOGI("MyApp", "PONG");
+    m_pongWaitList.notifyFirst();
 
     return nullptr;
 }
