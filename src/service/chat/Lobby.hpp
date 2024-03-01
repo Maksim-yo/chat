@@ -11,8 +11,8 @@ class Peer;
 class Lobby : public oatpp::websocket::AsyncConnectionHandler::SocketInstanceListener
 {
 private:
-private:
     std::shared_ptr<RoomManager> m_roomManager;
+    OATPP_COMPONENT(std::shared_ptr<oatpp::async::Executor>, m_asyncExecutor);
 
 public:
     Lobby();

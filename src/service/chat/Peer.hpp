@@ -16,6 +16,7 @@
 #include "RoomManager.hpp"
 #include "dto/DTOs.hpp"
 #include "dto/Messages.hpp"
+#include "utils/Timer.hpp"
 
 #define MSG(msg) \
     m_objectMapper->writeToString(msg)
@@ -32,7 +33,7 @@ private:
     oatpp::data::stream::BufferOutputStream m_messageBuffer;
     std::shared_ptr<oatpp::websocket::AsyncWebSocket> m_socket;
 
-    uint16_t m_pingCounter{0};
+    std::atomic<bool> m_pongArrived{false};
     std::mutex m_pingLock;
     oatpp::async::Lock m_writeLock;
     oatpp::async::CoroutineWaitList m_pingWaitList;
@@ -48,7 +49,7 @@ public:
     Peer(std::shared_ptr<AsyncWebSocket> socket, oatpp::Int32 peerId, oatpp::String nickname, std::shared_ptr<RoomManager> roomManager);
 
     void sendMessageAsync(const oatpp::String& message);
-    bool sendPingAsync();
+    oatpp::async::CoroutineStarter sendPingAsyncScheduling(int maxTimeWait=2, int maxRetries=3, int interval=10);
 
     Room* getOrCreateRoom(oatpp::Int32 roomId);
 
@@ -59,7 +60,6 @@ public:
     CoroutineStarter onClose(const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& socket, v_uint16 code, const oatpp::String& message) override;
     CoroutineStarter onPong(const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& socket, const oatpp::String& message) override;
     CoroutineStarter onPing(const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& socket, const oatpp::String& message) override;
-
     ~Peer();
 };
 
