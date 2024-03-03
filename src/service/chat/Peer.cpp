@@ -12,7 +12,6 @@ Peer::Peer(std::shared_ptr<AsyncWebSocket> socket, oatpp::Int32 peerId, oatpp::S
 
 Peer::~Peer()
 {
-    // TODO: Refactor, not safe 'cause of mutex
     std::lock_guard lck(m_roomsLock);
     for (auto itRoom = m_rooms.begin(); itRoom != m_rooms.end(); itRoom++) {
         (*itRoom)->peerLeft(this);
@@ -127,7 +126,7 @@ oatpp::async::CoroutineStarter Peer::sendPingAsyncScheduling(int maxTimeWait, in
 
 Room* Peer::getOrCreateRoom(oatpp::Int32 roomId)
 {
-    std::lock_guard<std::mutex> lck(m_roomsLock);
+    std::lock_guard lck(m_roomsLock);
     Room* room = nullptr;
     for (auto itRoom = m_rooms.begin(); itRoom != m_rooms.end(); itRoom++) {
         if ((*itRoom)->getId() == roomId)

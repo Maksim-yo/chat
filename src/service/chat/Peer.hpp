@@ -9,6 +9,8 @@
 #include "oatpp/core/async/Lock.hpp"
 #include "oatpp/core/data/mapping/ObjectMapper.hpp"
 #include "oatpp/core/macro/component.hpp"
+#include "oatpp/core/concurrency/SpinLock.hpp"
+
 
 #include "service/dao/impl/postgres/ChatDao.hpp"
 #include "service/dao/impl/postgres/UserDao.hpp"
@@ -28,7 +30,7 @@ private:
     oatpp::String m_nickname;
     std::shared_ptr<RoomManager> m_roomManager;
     std::vector<Room*> m_rooms;
-    std::mutex m_roomsLock;
+    oatpp::concurrency::SpinLock m_roomsLock;
 
     oatpp::data::stream::BufferOutputStream m_messageBuffer;
     std::shared_ptr<oatpp::websocket::AsyncWebSocket> m_socket;
