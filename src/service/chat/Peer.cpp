@@ -1,17 +1,25 @@
 #include <chrono>
+#include <cstdlib>
 
 #include "Peer.hpp"
 #include "RoomManager.hpp"
+#include "service/logging/ILogger.hpp"
 #include "utils/utils.hpp"
+
 using namespace std::chrono;
 
-Peer::Peer(std::shared_ptr<AsyncWebSocket> socket, oatpp::Int32 peerId, oatpp::String nickname, std::shared_ptr<RoomManager> roomManager)
+Peer::Peer(const std::shared_ptr<AsyncWebSocket>& socket, oatpp::Int32 peerId, oatpp::String nickname, std::shared_ptr<RoomManager> roomManager)
     : m_socket(socket), m_peerId(peerId), m_nickname(nickname), m_roomManager(std::move(roomManager))
 {
+    sessionId = rand();
+    OATPP_LOGD("MyApp", "Peer created. Peer session id: %d", sessionId);
 }
 
 Peer::~Peer()
-{
+{   
+    OATPP_LOGD("MyApp", "Peer destroyed. Peer session id: %d", sessionId);
+    shouldDestroy = true;
+    // Refactor, not safe
     std::lock_guard lck(m_roomsLock);
     for (auto itRoom = m_rooms.begin(); itRoom != m_rooms.end(); itRoom++) {
         (*itRoom)->peerLeft(this);
@@ -42,15 +50,17 @@ void Peer::sendMessageAsync(const oatpp::String& message)
 
     m_asyncExecutor->execute<SendMessageCoroutine>(&m_writeLock, m_socket, message);
 }
-
 oatpp::async::CoroutineStarter Peer::sendPingAsyncScheduling(int maxTimeWait, int maxRetries, int interval)
 {
     class SendPingCoroutine : public oatpp::async::Coroutine<SendPingCoroutine>
     {
     private:
         oatpp::async::Lock* m_lock;
-        std::shared_ptr<oatpp::websocket::AsyncWebSocket> m_websocket;
+        std::mutex scheduleLock;
+        std::mutex m_pongLock;
+        std::shared_ptr<oatpp::websocket::AsyncWebSocket> m_socket;
         Peer* m_peer;
+        int peerSessionId;
         int m_maxTimeWait;
         int maxRetries;
         int maxRetriesBackup;
@@ -61,27 +71,28 @@ oatpp::async::CoroutineStarter Peer::sendPingAsyncScheduling(int maxTimeWait, in
     private:
         void onSuccess()
         {
-            OATPP_LOGI("MyApp", "PING is good");
+            OATPP_LOGD("MyApp", "PING is good. Peer session id %d", peerSessionId);
             maxRetries = maxRetriesBackup;
         }
 
         void onFailure()
         {
-            OATPP_LOGI("MyApp", "Request timeout exceeded.");
-        };
+            OATPP_LOGD("MyApp", "Request timeout exceeded. Peer session id %d", peerSessionId);
+        }
 
     public:
-        SendPingCoroutine(oatpp::async::Lock* lock, const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& websocket,
+        SendPingCoroutine(oatpp::async::Lock* lock, std::shared_ptr<oatpp::websocket::AsyncWebSocket> socket,
                           Peer* peer, int maxTimeWait, int maxRetries, int interval)
-            : m_lock(lock), m_websocket(websocket), m_peer(peer), m_maxTimeWait(maxTimeWait), maxRetries(maxRetries), m_interval(interval)
+            : m_lock(lock), m_peer(peer), m_maxTimeWait(maxTimeWait), maxRetries(maxRetries), m_interval(interval), m_socket(socket)
         {
+            peerSessionId = peer->getSessionId();
             m_interval *= 1000;
-            m_maxTimeWait *= 1000;
             maxRetriesBackup = maxRetries;
         }
 
         Action act() override
         {
+            std::lock_guard lck(scheduleLock);
             if (is_schedule) {
 
                 v_int64 cur_time = Utils::getCurrentTimeInMiliseconds();
@@ -93,29 +104,33 @@ oatpp::async::CoroutineStarter Peer::sendPingAsyncScheduling(int maxTimeWait, in
         }
         Action ping()
         {
+            if (m_peer->shouldDestroy)
+                return finish();
             m_peer->m_pongArrived = false;
             maxRetries--;
             m_wait = true;
-            OATPP_LOGI("MyApp", "Trying to ping");
-            return oatpp::async::synchronize(m_lock, m_websocket->sendPingAsync(nullptr)).next(yieldTo(&SendPingCoroutine::waitPing));
+            OATPP_LOGD("MyApp", "Trying to ping. Thread id: %d. Peer session id: ", std::this_thread::get_id(), peerSessionId);
+            return yieldTo(&SendPingCoroutine::waitPing);
         }
         Action waitPing()
         {
-            std::lock_guard<std::mutex> lck(m_peer->m_pingLock);
+            std::lock_guard<std::mutex> lck(m_pongLock);
+            if (m_peer->shouldDestroy)
+                return finish();
+
             if (m_peer->m_pongArrived) {
                 onSuccess();
                 is_schedule = true;
                 return yieldTo(&SendPingCoroutine::act);
             }
             if (m_wait) {
-                v_int64 cur_time = Utils::getCurrentTimeInMiliseconds();
-                v_int64 new_time = (cur_time + 2000) * 1000;
+                std::chrono::steady_clock::time_point time_point = std::chrono::steady_clock::now() + 1s * m_maxTimeWait;
                 m_wait = false;
-                return Action::createWaitRepeatAction(new_time);
+                return Action::createWaitListActionWithTimeout(&m_peer->m_pongWaitList, time_point);
             }
             if (maxRetries == 0) {
                 onFailure();
-                return finish();
+                return oatpp::async::synchronize(m_lock, m_socket->sendCloseAsync()).next(finish());
             }
             m_wait = true;
             return yieldTo(&SendPingCoroutine::ping);
@@ -250,4 +265,9 @@ oatpp::Int32 Peer::getPeerId() const
 oatpp::String Peer::getPeerName() const
 {
     return m_nickname;
+}
+
+int Peer::getSessionId() const
+{
+    return sessionId;
 }
