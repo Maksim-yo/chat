@@ -1,0 +1,382 @@
+asyncapi: 3.0.0
+info:
+  title: AsyncApi for chat app
+  version: 1.0.
+servers:
+    develompent-http:
+      host: 127.0.0.1
+      protocol: http
+      description: Public server available without authorization.
+
+    develompent-ws:
+      host: 127.0.0.1
+      protocol: ws
+      security:
+        - $ref: '#/components/securitySchemes/auth'
+      description: Private server that requires authorization. The API client must request an authentication "token" in cookie via the following REST API endpoint 'registration' or 'login'. The resulting token must be provided in cookies with name 'Auth_token'
+
+
+channels:
+  ws:
+    servers:
+      - $ref: '#/servers/develompent-ws'
+    address: /
+    messages:
+      peerReadMsg:
+        $ref: '#/components/messages/peerReadMsg'
+      peerInitMsg:
+        $ref: '#/components/messages/peerInitMsg'
+      peerMsg:
+        $ref: '#/components/messages/peerMsg'
+      peerFindRoomsRequest:
+        $ref: '#/components/messages/peerFindRoomsRequest'
+      peerFindRoomsMsg:
+        $ref: '#/components/messages/peerFindRoomsMsg'
+      peerInitRequest:
+        $ref: '#/components/messages/peerInitRequest'
+  login:
+    address: /accounts/auth
+    servers:
+    - $ref: '#/servers/develompent-http'
+
+  registration:
+    address: /accounts/registration
+    servers:
+    - $ref: '#/servers/develompent-http'
+
+operations:
+  readMessage:
+    action: send
+    channel:
+      $ref: '#/channels/ws'
+    messages:
+      - $ref: '#/channels/ws/messages/peerReadMsg'
+    reply:
+      messages:
+      - $ref: '#/channels/ws/messages/peerReadMsg'
+      channel:
+        $ref: '#/channels/ws'
+  peerMessage:
+    action: send
+    channel:
+      $ref: '#/channels/ws'
+    messages:
+      - $ref: '#/channels/ws/messages/peerMsg'
+    reply:
+      messages:
+      - $ref: '#/channels/ws/messages/peerMsg'
+      channel:
+        $ref: '#/channels/ws'
+  peerFindRoomsMessageRequest:
+    action: send
+    channel:
+      $ref: '#/channels/ws'
+    messages:
+      - $ref: '#/channels/ws/messages/peerFindRoomsRequest'
+    reply:
+      messages:
+      - $ref: '#/channels/ws/messages/peerFindRoomsMsg'
+      channel:
+        $ref: '#/channels/ws'
+  peerInitRequest:
+    action: send
+    channel:
+      $ref: '#/channels/ws'
+    messages:
+      - $ref: '#/channels/ws/messages/peerInitRequest'
+    reply:
+      messages:
+      - $ref: '#/channels/ws/messages/peerInitMsg'
+      channel:
+        $ref: '#/channels/ws'
+  newPeerMessage: 
+    action: receive
+    channel:
+      $ref: '#/channels/ws'
+    messages:
+      - $ref: '#/channels/ws/messages/peerMsg'
+
+  getLoginPage:
+    action: send
+    channel:
+      $ref: '#/channels/login'
+    bindings:
+      http:
+        method: GET
+        bindingVersion: '0.3.0'
+    reply:
+      messages:
+        - $ref: '#/components/messages/HtmlPageReply'
+      channel:
+        $ref: '#/channels/login'
+
+  login:
+    action: send
+    channel:
+      $ref: '#/channels/login'
+    bindings:
+      http:
+        method: POST
+        query:
+          type: object
+          required:
+            - login
+            - password
+          properties:
+            login:
+              type: string
+            password:
+              type: string
+          additionalProperties: false
+        bindingVersion: '0.3.0'
+    reply:
+      messages:
+        - $ref: '#/components/messages/LoginReplySuccess'
+        - $ref: '#/components/messages/LoginReplyFailure'
+
+  getRegistrationPage:
+    action: send
+    channel:
+      $ref: '#/channels/registration'
+    bindings:
+      http: 
+        method: GET
+        bindingVersion: '0.3.0'
+    reply:
+      messages:
+        - $ref: '#/components/messages/HtmlPageReply'
+      channel:
+        $ref: '#/channels/registration'
+  registration:
+    action: send
+    channel:
+      $ref: '#/channels/registration'
+    bindings:
+      http: 
+        method: POST
+        query:
+          type: object
+          required:
+            - login
+            - password1
+            - nickname
+          properties:
+            login:
+              type: string
+            password1:
+              type: string
+            nickname:
+              type: string
+          additionalProperties: false
+        bindingVersion: '0.3.0' 
+    reply:
+      messages:
+        - $ref: '#/components/messages/RegistrationReplyFailure'
+        - $ref: '#/components/messages/RegistrationReplySuccess'
+components:
+  messages:
+    HtmlPageReply:
+      $ref: '#/components/schemas/HtmlPageReply'
+    RegistrationReplySuccess:
+      $ref: '#/components/messages/LoginReplySuccess'
+    RegistrationReplyFailure:
+      $ref: '#/components/messages/LoginReplyFailure'
+    LoginReplyFailure:
+      $ref: '#/components/messages/HtmlPageReply'
+    LoginReplySuccess:
+      description: "Authenticated. Redirect to /. 
+                  The session ID is returned in a cookie named `Auth_token`. You need to include this cookie in subsequent requests"
+      bindings:
+          http:
+            statusCode: 302
+            headers:
+              type: object
+              properties:
+                Location:
+                  type: string
+                Set-Cookie:
+                    type: string
+                    name: hello
+                    example: Auth_token=abcde12345; Path=/; Max-age=31414 HttpOnly
+
+            bindingVersion: '0.3.0'
+    peerReadMsg:
+      summary: Number of read messages sent to server
+      payload:
+        $ref: '#/components/schemas/peerReadMsg'
+    peerInitMsg:
+      summary: Response from server with initialization information
+      payload:
+        $ref: '#/components/schemas/initMsg'
+    peerFindRoomsRequest:
+      summary: Request server for sending peerFindRoomsMsg
+      payload:
+        type: object
+        properties:
+          code:
+            type: integer
+            const: 17     
+          peerId:
+            type: integer
+          peerNickname:
+            type: string
+          query:
+            type: string
+    peerInitRequest:
+        summary: Request server for initializing peer
+        payload: 
+          type: object
+          properties:
+            code:
+              type: integer
+              const: 0
+    peerMsg:
+      summary: Ordinary client message
+      payload:
+        $ref: '#/components/schemas/peerMsg'
+    peerFindRoomsMsg:
+      summary: Response from server with search results about clients
+      payload:
+        $ref: '#/components/schemas/findMsg'
+
+  schemas:
+    messageCodes:
+      type: integer
+      oneOf:
+        - title: CODE_PEER_MESSAGE
+          const: 3
+        - title: CODE_PEER_READ
+          const: 6
+        - title: CODE_INFO
+          const: 0
+        - title: CODE_FIND_ROOMS
+          const: 17
+    HtmlPageReply:
+      bindings:
+          http:
+            statusCode: 200
+            headers:
+              type: object
+              properties:
+                Content-Type:
+                  type: string
+                  enum: ['text/html']
+            bindingVersion: '0.3.0'
+    peerReadMsg:
+      address: "fff/"
+      type: object
+      properties:
+        code: 
+          type: integer
+          const: 6
+        peerId:
+          type: integer
+        peerNickname:
+          type: string
+        timestamp:
+          type: integer
+        count:
+          type: integer
+        chat_id:
+          type: integer
+    peerMsg:
+      type: object
+      properties:
+        code: 
+          type: integer
+          const: 3
+        peerNickname:
+          type: string
+        peerId:
+          type: integer
+        timestamp:
+          type: integer
+        message:
+          $ref: '#/components/schemas/messageInfo'
+    findMsg:
+      type: object
+      properties:
+        code: 
+          type: integer
+          const: 17
+        peerId:
+          type: integer
+        peerNickname:
+          type: string
+        timestamp:
+          type: integer
+        query:
+          type: string
+        users:
+          type: array
+          items: 
+            $ref: '#/components/schemas/peerInfo'
+    initMsg:
+      type: object
+      properties:
+        code:
+            type: integer
+            const: 0
+        peerId:
+          type: integer
+        peerNickname:
+          type: string
+        timestamp:
+          type: integer
+        chats:
+          type: array
+          items:
+            $ref: '#/components/schemas/chatInfo'
+          
+    chatInfo:
+      type: object
+      properties: 
+        id: 
+          type: integer
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/messageInfo'
+        peers:
+          type: array
+          items:
+            $ref: '#/components/schemas/peerInfo'
+            
+    messageInfo:
+      type: object
+      properties:
+        messageHash:
+          type: integer
+        message:
+          type: string
+        is_read:
+          type: boolean
+        timestamp:
+          type: integer
+        peerId:
+          type: integer
+          description: "Peer id who sent the message"
+        chat_id:
+          type: integer
+    baseMessage:
+      type: object
+      properties:
+        peerId:
+          type: integer
+        peerNickname:
+          type: string
+        timestamp:
+          type: integer
+    peerInfo:
+      type: object
+      properties:
+        peerId:
+          type: integer
+        peerName: 
+          type: string
+  securitySchemes:
+    auth:
+      type: httpApiKey
+      in: cookie
+      name: Auth_token
+
