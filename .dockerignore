@@ -1,0 +1,6 @@
+.vscode/
+build/
+*.bak
+vcpkg/
+.vs/
+config/

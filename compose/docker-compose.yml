@@ -1,0 +1,35 @@
+version: '3.7'
+services:
+  db:
+    image: 'postgres:15'
+    restart: always
+    volumes:
+      - '~/data/test:/var/lib/postgresql/data/'
+    ports:
+      - 5432:5432
+    environment:
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_USER: postgres
+        PGUSER: postgres
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  
+  app:
+    build: ..
+    environment: 
+      CHAT_DB_HOST: db
+      CHAT_DB_USER: postgres
+      CHAT_DB_PASSWORD: postgres 
+      CHAT_DB_NAME: postgres 
+      CHAT_DB_PORT: 5432
+    ports:
+      - 8000:8000
+    depends_on:
+      db:
+        condition: service_healthy
+
+
