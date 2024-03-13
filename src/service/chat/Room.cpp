@@ -23,9 +23,11 @@ oatpp::Int32 Room::getId()
 
 void Room::sendMessageAsync(const oatpp::String& message)
 {
+    m_peersLock.lock();
     for (auto itPeer = m_peers.begin(); itPeer != m_peers.end(); itPeer++) {
         (*itPeer)->sendMessageAsync(message);
     }
+    m_peersLock.unlock();
 }
 
 void Room::markMessagesAsRead(int count)
@@ -70,7 +72,20 @@ oatpp::Object<ChatDto> Room::getChatDto()
         }
     }
     chat->history = m_messageHistory;
-    chat->peers = m_users;
+    chat->peers = {};
+    for (auto itUser = m_users->begin(); itUser != m_users->end(); itUser++) {
+        auto user = PeerDto::createShared();
+        user->peerId = (*itUser)->peerId;
+        user->peerName = (*itUser)->peerName;
+        user->isOnline = (*itUser)->isOnline;
+        for (auto peer : m_peers) {
+            if (peer->getPeerId() == (*itUser)->peerId) {
+                user->isOnline = true;
+                break;
+            }
+        }
+        chat->peers->push_back(user);
+    }
     chat->id = m_id;
     return chat;
 }
@@ -80,6 +95,7 @@ void Room::peerJoin(Peer* peer)
     m_peersLock.lock();
     m_peers.push_back(peer);
     m_peersLock.unlock();
+    sendMessageAsync(peer->createPeerStatusMessage(true));
 }
 
 void Room::peerLeft(Peer* peer)
@@ -87,6 +103,7 @@ void Room::peerLeft(Peer* peer)
     m_peersLock.lock();
     m_peers.erase(std::remove_if(m_peers.begin(), m_peers.end(), [&peer](Peer* p) { return p == peer; }), m_peers.end());
     m_peersLock.unlock();
+    sendMessageAsync(peer->createPeerStatusMessage(false));
 }
 
 void Room::saveData()
@@ -103,4 +120,9 @@ void Room::saveData()
         m_newMessagesdIndex++;
     }
     m_currentMessagesCount = 0;
+}
+
+bool Room::shouldDestroy()
+{
+    return m_peers.size() == 0;
 }

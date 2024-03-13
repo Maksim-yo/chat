@@ -10,11 +10,11 @@
 
 #include "dto/DTOs.hpp"
 #include "service/dao/impl/postgres/ChatDao.hpp"
+#include "utils/Timer.hpp"
 
 class Peer;
 class Room
 {
-private:
 private:
     oatpp::Int32 m_id;
     oatpp::Vector<oatpp::Object<MessageDto>> m_messageHistory;
@@ -25,7 +25,8 @@ private:
     int32_t m_newMessagesdIndex;
     int32_t m_currentMessagesCount;
     oatpp::Vector<oatpp::Object<PeerDto>> m_users;
-
+    Timer timer;
+    std::atomic<bool> m_shouldDestroy;
     std::mutex m_historyLock;
     std::mutex m_changedMessagesLock;
     std::mutex m_usersLock;
@@ -47,5 +48,6 @@ public:
     void peerJoin(Peer* peer);
     void peerLeft(Peer* peer);
     void saveData();
+    bool shouldDestroy();
 };
 #endif
