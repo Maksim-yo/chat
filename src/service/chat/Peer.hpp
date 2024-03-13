@@ -34,13 +34,10 @@ private:
 
     oatpp::data::stream::BufferOutputStream m_messageBuffer;
     std::shared_ptr<oatpp::websocket::AsyncWebSocket> m_socket;
-    std::mutex m_pongLock;
     std::atomic<bool> shouldDestroy{false};
     std::atomic<bool> m_pongArrived{false};
 
     oatpp::async::Lock m_writeLock;
-    oatpp::async::CoroutineWaitList m_pingWaitList;
-    oatpp::async::CoroutineWaitList m_pongWaitList;
 
 private:
     OATPP_COMPONENT(std::shared_ptr<oatpp::async::Executor>, m_asyncExecutor);
@@ -60,6 +57,8 @@ public:
     oatpp::Int32 getPeerId() const;
     oatpp::String getPeerName() const;
     int getSessionId() const;
+    oatpp::Object<PeerDto> createDto();
+    oatpp::String createPeerStatusMessage(bool status);
     CoroutineStarter readMessage(const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& socket, v_uint8 opcode, p_char8 data, oatpp::v_io_size size) override;
     CoroutineStarter onClose(const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& socket, v_uint16 code, const oatpp::String& message) override;
     CoroutineStarter onPong(const std::shared_ptr<oatpp::websocket::AsyncWebSocket>& socket, const oatpp::String& message) override;

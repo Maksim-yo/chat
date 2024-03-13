@@ -13,6 +13,7 @@ public:
 
     DTO_FIELD(Int32, peerId);
     DTO_FIELD(String, peerName);
+    DTO_FIELD(Boolean, isOnline) = false;
 };
 
 class FileDto : public oatpp::DTO

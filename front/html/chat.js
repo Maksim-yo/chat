@@ -13,8 +13,9 @@ let CODE_PEER_DELIVERED = 7
 let CODE_FILE_SHARE = 8
 let CODE_FILE_REQUEST_CHUNK = 9
 let CODE_FILE_CHUNK_DATA = 10
-
-let CODE_FIND_ROOMS = 15
+let CODE_PEER_ONLINE = 14
+let CODE_PEER_OFFLINE = 15
+let CODE_FIND_ROOMS = 17
 
 let peerId = null
 let peerName = null
@@ -134,6 +135,12 @@ function onMessage(message) {
             if (message.users !== undefined)
                 setFindConversationResult(message.users)
             else setFindConversationResult(null)
+            break
+        case CODE_PEER_ONLINE:
+            changePeerStatus(message.peerId, true)
+            break
+        case CODE_PEER_OFFLINE:
+            changePeerStatus(message.peerId, false)
             break
     }
 }
@@ -466,7 +473,23 @@ function markMessagesAsRead(chat_id, count) {
     Alpine.store('chat').markMessagesAsRead(chat_id, count)
 }
 
+function changePeerStatus(peer_id, status) {
+    for (let [index, chat] of Object.entries(
+        Alpine.store('chat').converstationHistory
+    )) {
+        for (let peer of chat.peers) {
+            if (peer.peerId == peer_id) peer.isOnline = status
+        }
+    }
+}
+
 function isPeerIdCurrentUser(item) {
     if (!peerId) return false
     return item.peerId === peerId
+}
+
+function test(peers) {
+    for (let peer of peers) {
+        if (peer.peerId != peerId) return peer.isOnline
+    }
 }
